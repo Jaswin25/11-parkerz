@@ -11,6 +11,7 @@ export interface Player {
   name: string;
   category: PlayerCategory;
   weekly_fee: number;
+  phone?: string;
   created_at: string;
 }
 
@@ -58,6 +59,7 @@ export interface Match {
   gpay_amount: number;
   notes?: string;
   who_played: string[]; // array of player UUIDs
+  match_number?: string; // e.g. 'Match 1', 'Match 2'
   created_at: string;
 }
 

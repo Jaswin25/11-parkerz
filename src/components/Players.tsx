@@ -9,7 +9,7 @@ interface PlayersProps {
   attendance: AttendanceRecord[];
   extraPayments: ExtraPayment[];
   matches: Match[];
-  onUpdatePlayer: (id: string, name: string, category: PlayerCategory) => Promise<void>;
+  onUpdatePlayer: (id: string, name: string, category: PlayerCategory, phone?: string) => Promise<void>;
   onDeletePlayer: (id: string) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -33,6 +33,7 @@ export default function Players({
 
   // Edit fields
   const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [editCategory, setEditCategory] = useState<PlayerCategory>('Normal');
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -68,6 +69,7 @@ export default function Players({
     setSelectedPlayer(player);
     setEditName(player.name);
     setEditCategory(player.category);
+    setEditPhone(player.phone || '');
     setActiveModalTab('ledger');
   };
 
@@ -76,9 +78,9 @@ export default function Players({
     if (!selectedPlayer || !editName.trim()) return;
     setIsUpdating(true);
     try {
-      await onUpdatePlayer(selectedPlayer.id, editName.trim(), editCategory);
+      await onUpdatePlayer(selectedPlayer.id, editName.trim(), editCategory, editPhone.trim());
       // Update selected player state so display updates
-      setSelectedPlayer(prev => prev ? { ...prev, name: editName.trim(), category: editCategory } : null);
+      setSelectedPlayer(prev => prev ? { ...prev, name: editName.trim(), category: editCategory, phone: editPhone.trim() } : null);
       showToast('Player profile updated successfully!');
     } catch (err: any) {
       showToast(err.message || 'Error updating player', 'error');
@@ -301,7 +303,14 @@ export default function Players({
           >
             {/* Header: Name and Category badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.name}</h3>
+              <div style={{ display: 'grid', gap: '2px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{player.name}</h3>
+                {player.phone && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    📱 {player.phone}
+                  </span>
+                )}
+              </div>
               <span className={`badge badge-${player.category.toLowerCase()}`}>
                 {player.category}
               </span>
@@ -350,9 +359,16 @@ export default function Players({
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: '1.4rem' }}>{selectedPlayer.name}</h2>
-                <span className={`badge badge-${selectedPlayer.category.toLowerCase()}`} style={{ marginTop: '4px' }}>
-                  {selectedPlayer.category} (₹{selectedPlayer.category === 'Normal' ? 50 : 30}/week)
-                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                  <span className={`badge badge-${selectedPlayer.category.toLowerCase()}`}>
+                    {selectedPlayer.category} (₹{selectedPlayer.category === 'Normal' ? 50 : 30}/week)
+                  </span>
+                  {selectedPlayer.phone && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      📱 {selectedPlayer.phone}
+                    </span>
+                  )}
+                </div>
               </div>
               <button onClick={() => setSelectedPlayer(null)} className="btn-icon">
                 <X size={18} />
@@ -538,6 +554,16 @@ export default function Players({
                       required 
                       value={editName}
                       onChange={e => setEditName(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Phone Number (for WhatsApp)</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 9876543210" 
+                      value={editPhone}
+                      onChange={e => setEditPhone(e.target.value)}
                     />
                   </div>
 

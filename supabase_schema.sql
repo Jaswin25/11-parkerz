@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.players (
     name TEXT NOT NULL UNIQUE,
     category TEXT NOT NULL CHECK (category IN ('Bike', 'School', 'Normal')),
     weekly_fee NUMERIC NOT NULL DEFAULT 50,
+    phone TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.matches (
     cash_amount NUMERIC NOT NULL DEFAULT 0,
     gpay_amount NUMERIC NOT NULL DEFAULT 0,
     notes TEXT,
+    match_number TEXT DEFAULT 'Match 1',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

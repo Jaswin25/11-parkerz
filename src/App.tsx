@@ -92,13 +92,13 @@ export default function App() {
   const latestWeekCollected = latestWeekRecords.reduce((sum, a) => sum + a.paid_amount, 0);
 
   // Wrappers to modify state and sync to DB
-  const handleAddPlayer = async (name: string, category: PlayerCategory) => {
-    await DbService.addPlayer(name, category);
+  const handleAddPlayer = async (name: string, category: PlayerCategory, phone?: string) => {
+    await DbService.addPlayer(name, category, phone);
     await loadData();
   };
 
-  const handleUpdatePlayer = async (id: string, name: string, category: PlayerCategory) => {
-    await DbService.updatePlayer(id, name, category);
+  const handleUpdatePlayer = async (id: string, name: string, category: PlayerCategory, phone?: string) => {
+    await DbService.updatePlayer(id, name, category, phone);
     await loadData();
   };
 

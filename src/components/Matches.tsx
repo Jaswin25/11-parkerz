@@ -5,9 +5,9 @@ import { Player, PlayerCategory, Match, MatchResult, SettlementMode } from '../t
 interface MatchesProps {
   players: Player[];
   matches: Match[];
-  onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string }) => Promise<void>;
+  onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onDeleteMatch: (id: string) => Promise<void>;
-  onAddPlayer: (name: string, category: PlayerCategory) => Promise<void>;
+  onAddPlayer: (name: string, category: PlayerCategory, phone?: string) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -32,6 +32,7 @@ export default function Matches({
   const [gpaySplit, setGpaySplit] = useState('');
   const [whoPlayed, setWhoPlayed] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [matchNumber, setMatchNumber] = useState('Match 1');
   const [submitting, setSubmitting] = useState(false);
 
   const [quickPlayerName, setQuickPlayerName] = useState('');
@@ -102,7 +103,8 @@ export default function Matches({
         cash_amount: cashAmt,
         gpay_amount: gpayAmt,
         who_played: whoPlayed,
-        notes: notes.trim()
+        notes: notes.trim(),
+        match_number: matchNumber
       });
       showToast(`Match vs ${opponent.trim()} (${result}) recorded!`);
       
@@ -114,6 +116,7 @@ export default function Matches({
       setGpaySplit('');
       setWhoPlayed([]);
       setNotes('');
+      setMatchNumber('Match 1');
       setShowAddForm(false);
     } catch (e: any) {
       showToast(e.message || 'Error recording match', 'error');
@@ -163,10 +166,17 @@ export default function Matches({
         <div className="glass-panel fade-in" style={{ border: '1px solid var(--secondary)' }}>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Record New Match</h3>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Date</label>
                 <input type="date" required value={date} onChange={e => setDate(e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Match Number</label>
+                <select value={matchNumber} onChange={e => setMatchNumber(e.target.value)}>
+                  <option value="Match 1">Match 1</option>
+                  <option value="Match 2">Match 2</option>
+                </select>
               </div>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Opponent Name</label>
@@ -311,10 +321,13 @@ export default function Matches({
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     vs {match.opponent}
                     <span className={`badge ${isWin ? 'badge-win' : 'badge-loss'}`}>
                       {match.result}
+                    </span>
+                    <span className="badge badge-normal" style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.1)', borderColor: 'var(--secondary)', color: 'var(--secondary)' }}>
+                      {match.match_number || 'Match 1'}
                     </span>
                   </h3>
                   <div style={{ display: 'flex', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px', flexWrap: 'wrap' }}>

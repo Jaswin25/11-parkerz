@@ -92,7 +92,7 @@ const LocalDb = {
     localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
   },
 
-  addPlayer: (name: string, category: PlayerCategory): Player => {
+  addPlayer: (name: string, category: PlayerCategory, phone?: string): Player => {
     const players = LocalDb.getPlayers();
     const fee = category === 'Normal' ? 50 : 30;
     const newPlayer: Player = {
@@ -100,6 +100,7 @@ const LocalDb = {
       name,
       category,
       weekly_fee: fee,
+      phone: phone || '',
       created_at: new Date().toISOString()
     };
     players.push(newPlayer);
@@ -107,7 +108,7 @@ const LocalDb = {
     return newPlayer;
   },
 
-  updatePlayer: (id: string, name: string, category: PlayerCategory): Player => {
+  updatePlayer: (id: string, name: string, category: PlayerCategory, phone?: string): Player => {
     const players = LocalDb.getPlayers();
     const fee = category === 'Normal' ? 50 : 30;
     const index = players.findIndex(p => p.id === id);
@@ -116,7 +117,8 @@ const LocalDb = {
       ...players[index],
       name,
       category,
-      weekly_fee: fee
+      weekly_fee: fee,
+      phone: phone || ''
     };
     LocalDb.savePlayers(players);
     return players[index];
@@ -226,7 +228,11 @@ const LocalDb = {
   getMatches: (): Match[] => {
     const data = localStorage.getItem(MATCHES_KEY);
     const matches: Match[] = data ? JSON.parse(data) : [];
-    return matches.sort((a, b) => b.date.localeCompare(a.date));
+    return matches.sort((a, b) => {
+      const dateCompare = b.date.localeCompare(a.date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.match_number || 'Match 1').localeCompare(b.match_number || 'Match 1');
+    });
   },
 
   addMatch: (match: Omit<Match, 'id' | 'created_at'>): Match => {
@@ -320,6 +326,7 @@ export const DbService = {
             name: p.name,
             category: p.category,
             weekly_fee: p.weekly_fee,
+            phone: p.phone || '',
             created_at: p.created_at
           }))
         );
@@ -395,6 +402,7 @@ export const DbService = {
             cash_amount: m.cash_amount,
             gpay_amount: m.gpay_amount,
             notes: m.notes,
+            match_number: m.match_number || 'Match 1',
             created_at: m.created_at
           }))
         );
@@ -473,12 +481,12 @@ export const DbService = {
     return LocalDb.getPlayers();
   },
 
-  addPlayer: async (name: string, category: PlayerCategory): Promise<Player> => {
+  addPlayer: async (name: string, category: PlayerCategory, phone?: string): Promise<Player> => {
     if (supabase) {
       const fee = category === 'Normal' ? 50 : 30;
       const { data, error } = await supabase
         .from('players')
-        .insert([{ name, category, weekly_fee: fee }])
+        .insert([{ name, category, weekly_fee: fee, phone: phone || '' }])
         .select();
       if (error) {
         console.error('Supabase addPlayer error', error);
@@ -486,15 +494,15 @@ export const DbService = {
       }
       return data[0];
     }
-    return LocalDb.addPlayer(name, category);
+    return LocalDb.addPlayer(name, category, phone);
   },
 
-  updatePlayer: async (id: string, name: string, category: PlayerCategory): Promise<Player> => {
+  updatePlayer: async (id: string, name: string, category: PlayerCategory, phone?: string): Promise<Player> => {
     if (supabase) {
       const fee = category === 'Normal' ? 50 : 30;
       const { data, error } = await supabase
         .from('players')
-        .update({ name, category, weekly_fee: fee })
+        .update({ name, category, weekly_fee: fee, phone: phone || '' })
         .eq('id', id)
         .select();
       if (error) {
@@ -503,7 +511,7 @@ export const DbService = {
       }
       return data[0];
     }
-    return LocalDb.updatePlayer(id, name, category);
+    return LocalDb.updatePlayer(id, name, category, phone);
   },
 
   deletePlayer: async (id: string): Promise<void> => {
@@ -675,7 +683,7 @@ export const DbService = {
         return LocalDb.getMatches();
       }
 
-      return mData.map(m => {
+      const formatted = mData.map(m => {
         const players = mpData
           .filter(mp => mp.match_id === m.id)
           .map(mp => mp.player_id);
@@ -683,6 +691,12 @@ export const DbService = {
           ...m,
           who_played: players
         };
+      });
+
+      return formatted.sort((a, b) => {
+        const dateCompare = b.date.localeCompare(a.date);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.match_number || 'Match 1').localeCompare(b.match_number || 'Match 1');
       });
     }
     return LocalDb.getMatches();
@@ -702,7 +716,8 @@ export const DbService = {
           settled_via: match.settled_via,
           cash_amount: match.cash_amount,
           gpay_amount: match.gpay_amount,
-          notes: match.notes
+          notes: match.notes,
+          match_number: match.match_number || 'Match 1'
         }])
         .select();
 

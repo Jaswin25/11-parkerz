@@ -92,9 +92,22 @@ export default function Pending({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const formatPhoneForWhatsApp = (phone: string) => {
+    const cleaned = phone.replace(/[^\d]/g, ''); // keep only digits
+    if (cleaned.length === 10) {
+      return `91${cleaned}`;
+    }
+    return cleaned;
+  };
+
   const handleSendWhatsApp = (p: any) => {
     const text = encodeURIComponent(getReminderText(p));
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    const phone = p.phone ? formatPhoneForWhatsApp(p.phone) : '';
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    }
   };
 
   const handleRecordPaymentClick = (player: Player, defaultAmt: number) => {
@@ -218,11 +231,16 @@ export default function Pending({
           >
             {/* Player details */}
             <div style={{ display: 'grid', gap: '4px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                 {p.name}
-                <span className={`badge badge-${p.category.toLowerCase()}`} style={{ fontSize: '0.65rem', marginLeft: '8px', padding: '2px 6px' }}>
+                <span className={`badge badge-${p.category.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
                   {p.category}
                 </span>
+                {p.phone && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '400' }}>
+                    📱 {p.phone}
+                  </span>
+                )}
               </h3>
               
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -254,8 +272,16 @@ export default function Pending({
                 <button 
                   onClick={() => handleSendWhatsApp(p)} 
                   className="btn btn-secondary"
-                  style={{ display: 'flex', gap: '4px', fontSize: '0.85rem', padding: '8px 12px', background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.2)', color: 'var(--primary)' }}
-                  title="Send via WhatsApp"
+                  style={{ 
+                    display: 'flex', 
+                    gap: '4px', 
+                    fontSize: '0.85rem', 
+                    padding: '8px 12px', 
+                    background: 'rgba(34, 197, 94, 0.1)', 
+                    borderColor: 'rgba(34, 197, 94, 0.2)', 
+                    color: '#22c55e' 
+                  }}
+                  title={p.phone ? `Send directly to ${p.phone} via WhatsApp` : "Open WhatsApp Send screen"}
                 >
                   <Send size={16} /> Send
                 </button>

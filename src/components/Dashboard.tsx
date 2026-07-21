@@ -12,9 +12,9 @@ interface DashboardProps {
   latestWeekPresentCount: number;
   latestWeekCollected: number;
   onNavigate: (tab: string) => void;
-  onAddPlayer: (name: string, category: PlayerCategory) => Promise<void>;
+  onAddPlayer: (name: string, category: PlayerCategory, phone?: string) => Promise<void>;
   onAddExpense: (expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
-  onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string }) => Promise<void>;
+  onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onAddExtraPayment: (payment: { player_id: string; date: string; amount: number; payment_mode: 'Cash' | 'GPay' | 'Both'; cash_amount: number; gpay_amount: number; notes?: string }) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -40,6 +40,7 @@ export default function Dashboard({
 
   // Form states
   const [playerName, setPlayerName] = useState('');
+  const [playerPhone, setPlayerPhone] = useState('');
   const [playerCategory, setPlayerCategory] = useState<PlayerCategory>('Normal');
 
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
@@ -59,6 +60,7 @@ export default function Dashboard({
   const [matchGpaySplit, setMatchGpaySplit] = useState('');
   const [matchWhoPlayed, setMatchWhoPlayed] = useState<string[]>([]);
   const [matchNotes, setMatchNotes] = useState('');
+  const [matchNumber, setMatchNumber] = useState('Match 1');
 
   const [paymentPlayerId, setPaymentPlayerId] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -73,9 +75,10 @@ export default function Dashboard({
     e.preventDefault();
     if (!playerName.trim()) return;
     try {
-      await onAddPlayer(playerName.trim(), playerCategory);
+      await onAddPlayer(playerName.trim(), playerCategory, playerPhone.trim());
       showToast(`Player "${playerName.trim()}" added successfully!`);
       setPlayerName('');
+      setPlayerPhone('');
       setShowAddPlayer(false);
     } catch (err: any) {
       showToast(err.message || 'Error adding player', 'error');
@@ -141,7 +144,8 @@ export default function Dashboard({
         cash_amount: cashAmt,
         gpay_amount: gpayAmt,
         who_played: matchWhoPlayed,
-        notes: matchNotes.trim()
+        notes: matchNotes.trim(),
+        match_number: matchNumber
       });
       showToast(`Recorded match vs ${matchOpponent.trim()} (${matchResult})!`);
       setMatchOpponent('');
@@ -151,6 +155,7 @@ export default function Dashboard({
       setMatchGpaySplit('');
       setMatchWhoPlayed([]);
       setMatchNotes('');
+      setMatchNumber('Match 1');
       setShowAddMatch(false);
     } catch (err: any) {
       showToast(err.message || 'Error adding match', 'error');
@@ -430,6 +435,15 @@ export default function Dashboard({
                 />
               </div>
               <div style={{ display: 'grid', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Phone Number (for WhatsApp)</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 9876543210" 
+                  value={playerPhone}
+                  onChange={e => setPlayerPhone(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Weekly Category</label>
                 <select value={playerCategory} onChange={e => setPlayerCategory(e.target.value as PlayerCategory)}>
                   <option value="Normal">Normal (₹50)</option>
@@ -507,10 +521,17 @@ export default function Dashboard({
               <button onClick={() => setShowAddMatch(false)} className="btn-icon"><X size={18} /></button>
             </div>
             <form onSubmit={handleAddMatchSubmit} style={{ display: 'grid', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Date</label>
                   <input type="date" required value={matchDate} onChange={e => setMatchDate(e.target.value)} />
+                </div>
+                <div style={{ display: 'grid', gap: '6px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Match Number</label>
+                  <select value={matchNumber} onChange={e => setMatchNumber(e.target.value)}>
+                    <option value="Match 1">Match 1</option>
+                    <option value="Match 2">Match 2</option>
+                  </select>
                 </div>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Opponent Team</label>
