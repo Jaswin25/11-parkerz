@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Users, CalendarCheck2, History, Award, AlertTriangle, 
-  BarChart3, Settings as SettingsIcon, RefreshCw, Receipt
+  BarChart3, MoreHorizontal, RefreshCw, Receipt
 } from 'lucide-react';
 import { DbService, calculateBalances } from './services/db';
 import { 
@@ -17,7 +17,6 @@ import MoneyHistory from './components/MoneyHistory';
 import Matches from './components/Matches';
 import Pending from './components/Pending';
 import Reports from './components/Reports';
-import Settings from './components/Settings';
 import Expenses from './components/Expenses';
 
 export default function App() {
@@ -172,7 +171,6 @@ export default function App() {
     { id: 'expenses', label: 'Expenses', icon: Receipt },
     { id: 'pending', label: 'Dues & Pending', icon: AlertTriangle },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   if (loading) {
@@ -403,12 +401,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'settings' && (
-            <Settings 
-              onRefreshAllData={loadData}
-              showToast={showToast}
-            />
-          )}
+
         </main>
       </div>
 
@@ -459,16 +452,15 @@ export default function App() {
         {/* More button to toggle others */}
         <button
           onClick={() => {
-            // Cycle between expenses -> pending -> reports -> settings
+            // Cycle between expenses -> pending -> reports
             if (activeTab === 'expenses') setActiveTab('pending');
             else if (activeTab === 'pending') setActiveTab('reports');
-            else if (activeTab === 'reports') setActiveTab('settings');
             else setActiveTab('expenses');
           }}
           style={{
             background: 'transparent',
             border: 'none',
-            color: ['expenses', 'pending', 'reports', 'settings'].includes(activeTab) ? 'var(--primary)' : 'var(--text-muted)',
+            color: ['expenses', 'pending', 'reports'].includes(activeTab) ? 'var(--primary)' : 'var(--text-muted)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -479,9 +471,9 @@ export default function App() {
             fontSize: '0.65rem'
           }}
         >
-          <SettingsIcon size={20} />
-          <span style={{ fontWeight: ['expenses', 'pending', 'reports', 'settings'].includes(activeTab) ? '600' : '400' }}>
-            {activeTab === 'expenses' ? 'Exp' : activeTab === 'pending' ? 'Dues' : activeTab === 'reports' ? 'Reports' : activeTab === 'settings' ? 'Settings' : 'More'}
+          <MoreHorizontal size={20} />
+          <span style={{ fontWeight: ['expenses', 'pending', 'reports'].includes(activeTab) ? '600' : '400' }}>
+            {activeTab === 'expenses' ? 'Exp' : activeTab === 'pending' ? 'Dues' : activeTab === 'reports' ? 'Reports' : 'More'}
           </span>
         </button>
       </nav>
