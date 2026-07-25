@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Users, CalendarCheck2, History, Award, AlertTriangle, 
-  BarChart3, MoreHorizontal, RefreshCw, Receipt
+  BarChart3, MoreHorizontal, RefreshCw, Receipt, LogOut, Lock, User, Eye, EyeOff
 } from 'lucide-react';
 import { DbService, calculateBalances } from './services/db';
 import { 
@@ -24,6 +24,35 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('isLoggedIn_11parkerz') === 'true';
+  });
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usernameInput.trim().toLowerCase() === '11parkerz' && passwordInput === 'Parkerz@11') {
+      localStorage.setItem('isLoggedIn_11parkerz', 'true');
+      setIsLoggedIn(true);
+      setLoginError('');
+      showToast('Successfully logged in!', 'success');
+    } else {
+      setLoginError('Invalid Username or Password. Please try again.');
+      showToast('Login failed', 'error');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn_11parkerz');
+    setIsLoggedIn(false);
+    setUsernameInput('');
+    setPasswordInput('');
+    showToast('Logged out successfully', 'info');
+  };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -197,6 +226,91 @@ export default function App() {
     );
   }
 
+  if (!showSplash && !isLoggedIn) {
+    return (
+      <div className="login-overlay">
+        <div className="glass-panel login-card">
+          <div className="login-header">
+            <img src="/logo.jpeg" alt="11 Parkerz Logo" className="login-logo" />
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '6px' }}>11 Parkerz</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Sign in to access control panel</p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit}>
+            {loginError && (
+              <div className="login-error">
+                <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <div className="login-form-group">
+              <label className="login-label" htmlFor="username">Username</label>
+              <div className="login-input-wrapper">
+                <User size={16} className="login-input-icon" />
+                <input
+                  type="text"
+                  id="username"
+                  className="login-input"
+                  placeholder="Enter username"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="login-form-group">
+              <label className="login-label" htmlFor="password">Password</label>
+              <div className="login-input-wrapper">
+                <Lock size={16} className="login-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  className="login-input"
+                  placeholder="Enter password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-input-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '8px', padding: '14px' }}
+            >
+              Sign In
+            </button>
+          </form>
+        </div>
+
+        {/* Toast Notification HUD */}
+        {toast && (
+          <div className="toast-container">
+            <div className={`toast toast-${toast.type}`} style={{
+              borderLeft: `4px solid ${
+                toast.type === 'success' ? 'var(--secondary)' : 
+                toast.type === 'error' ? 'var(--accent)' : 'rgba(255,255,255,0.3)'
+              }`
+            }}>
+              {toast.message}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
       
@@ -204,7 +318,7 @@ export default function App() {
       {showSplash && (
         <div className={`splash-screen ${splashFade ? 'fade-out' : ''}`}>
           <div className="splash-logo-container">
-            <img src="/logo.jpg" alt="11 Parkerz Logo" className="splash-logo" />
+            <img src="/logo.jpeg" alt="11 Parkerz Logo" className="splash-logo" />
             <h1 className="splash-title">11 Parkerz</h1>
             <div className="splash-loader">
               <div className="splash-loader-bar"></div>
@@ -226,7 +340,7 @@ export default function App() {
       }}>
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/logo.jpg" alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--secondary)', boxShadow: '0 0 10px var(--secondary-glow)' }} />
+            <img src="/logo.jpeg" alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--secondary)', boxShadow: '0 0 10px var(--secondary-glow)' }} />
             <span style={{ color: 'var(--text-primary)' }}>11 Parkerz</span>
           </h1>
         </div>
@@ -257,6 +371,26 @@ export default function App() {
             <span style={{ fontWeight: '700', color: 'var(--accent)' }}>{formatCurrency(balances.pending)}</span>
           </div>
         </div>
+
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary"
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem',
+            gap: '6px',
+            border: '1px solid rgba(225, 29, 72, 0.3)',
+            color: '#fb7185',
+            display: 'flex',
+            alignItems: 'center',
+            height: '38px',
+            borderRadius: 'var(--border-radius-sm)'
+          }}
+          title="Sign Out"
+        >
+          <LogOut size={16} />
+          <span>Logout</span>
+        </button>
       </header>
 
       {/* Main Layout Area */}

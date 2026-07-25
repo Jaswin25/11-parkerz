@@ -468,6 +468,12 @@ tr:hover td {
   th {
     padding: 12px 14px;
   }
+
+  .segmented-button {
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
 }
 
 /* Splash Screen Opening Animation Styles */
@@ -579,4 +585,103 @@ tr:hover td {
   to {
     left: 0;
   }
+}
+
+/* Login Screen Styles */
+.login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+  background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(29, 78, 216, 0.15) 0px, transparent 40%),
+    radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.12) 0px, transparent 40%),
+    radial-gradient(at 50% 50%, rgba(225, 29, 72, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+.login-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.login-header {
+  margin-bottom: 28px;
+}
+
+.login-logo {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+  box-shadow: 0 0 20px var(--secondary-glow);
+  margin: 0 auto 16px auto;
+  object-fit: cover;
+}
+
+.login-form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.login-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.login-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+}
+
+.login-input {
+  padding-left: 44px !important;
+}
+
+.login-input-toggle {
+  position: absolute;
+  right: 14px;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-input-toggle:hover {
+  color: var(--secondary);
+}
+
+.login-error {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: var(--border-radius-sm);
+  color: #f87171;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

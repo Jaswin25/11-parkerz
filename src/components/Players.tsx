@@ -26,7 +26,7 @@ export default function Players({
 }: PlayersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'pending' | 'attendance' | 'paid'>('name');
-  
+
   // Details Modal States
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [activeModalTab, setActiveModalTab] = useState<'ledger' | 'attendance' | 'matches' | 'edit'>('ledger');
@@ -47,7 +47,7 @@ export default function Players({
   });
 
   // Filter & Search
-  const filteredPlayers = playersWithStats.filter(player => 
+  const filteredPlayers = playersWithStats.filter(player =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -117,7 +117,7 @@ export default function Players({
   // Extract ledger details for the selected player
   const getPlayerLedger = (playerId: string) => {
     const list: { type: 'Attendance' | 'Payment'; date: string; amount: number; mode: string; notes?: string }[] = [];
-    
+
     // 1. Add attendance payments
     attendance
       .filter(a => a.player_id === playerId && a.paid_amount > 0)
@@ -151,7 +151,7 @@ export default function Players({
   // Get full attendance details for selected player
   const getPlayerAttendanceHistory = (playerId: string) => {
     const list: { date: string; status: 'Present' | 'Absent'; due: number; paid: number; pending: number }[] = [];
-    
+
     attendance
       .filter(a => a.player_id === playerId)
       .forEach(rec => {
@@ -207,7 +207,7 @@ export default function Players({
 
   return (
     <div className="fade-in" style={{ display: 'grid', gap: '20px' }}>
-      
+
       {/* Controls: Search and Sort */}
       <div className="glass-panel" style={{
         display: 'flex',
@@ -216,12 +216,12 @@ export default function Players({
         flexWrap: 'wrap',
         gap: '16px'
       }}>
-        
+
         {/* Search */}
         <div style={{ position: 'relative', flex: '1 1 300px' }}>
-          <input 
-            type="text" 
-            placeholder="Search players by name..." 
+          <input
+            type="text"
+            placeholder="Search players by name..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{ paddingLeft: '40px' }}
@@ -236,7 +236,7 @@ export default function Players({
         </div>
 
         {/* Segmented Sorting Control */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '320px', flex: '1 1 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '260px', flex: '1 1 auto' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600', whiteSpace: 'nowrap' }}>Sort:</span>
           <div className="segmented-control">
             {[
@@ -258,15 +258,15 @@ export default function Players({
         </div>
 
         {/* Download CSV button */}
-        <button 
-          onClick={downloadCSV} 
-          className="btn btn-secondary" 
-          style={{ 
-            height: '42px', 
-            padding: '10px 16px', 
-            borderColor: 'var(--secondary)', 
+        <button
+          onClick={downloadCSV}
+          className="btn btn-secondary"
+          style={{
+            height: '42px',
+            padding: '10px 16px',
+            borderColor: 'var(--secondary)',
             color: 'var(--secondary)',
-            flex: '0 0 auto' 
+            flex: '0 0 auto'
           }}
           title="Download all players financial report as CSV"
         >
@@ -281,9 +281,9 @@ export default function Players({
         gap: '16px'
       }}>
         {filteredPlayers.map(player => (
-          <div 
-            key={player.id} 
-            className="glass-panel" 
+          <div
+            key={player.id}
+            className="glass-panel"
             onClick={() => handleOpenDetails(player)}
             style={{
               cursor: 'pointer',
@@ -354,7 +354,7 @@ export default function Players({
       {selectedPlayer && (
         <div className="modal-backdrop">
           <div className="modal-content" style={{ maxWidth: '650px' }}>
-            
+
             {/* Modal Header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -416,12 +416,12 @@ export default function Players({
 
             {/* Modal Body */}
             <div style={{ padding: '24px', maxHeight: '50vh', overflowY: 'auto' }}>
-              
+
               {/* Tab 1: Payment Ledger */}
               {activeModalTab === 'ledger' && (
                 <div style={{ display: 'grid', gap: '12px' }}>
                   <h4 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>All Received Payments</h4>
-                  
+
                   <div className="table-container">
                     <table>
                       <thead>
@@ -549,9 +549,9 @@ export default function Players({
                 <form onSubmit={handleUpdateSubmit} style={{ display: 'grid', gap: '16px' }}>
                   <div style={{ display: 'grid', gap: '6px' }}>
                     <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Name</label>
-                    <input 
-                      type="text" 
-                      required 
+                    <input
+                      type="text"
+                      required
                       value={editName}
                       onChange={e => setEditName(e.target.value)}
                     />
@@ -559,9 +559,9 @@ export default function Players({
 
                   <div style={{ display: 'grid', gap: '6px' }}>
                     <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Phone Number (for WhatsApp)</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. 9876543210" 
+                    <input
+                      type="text"
+                      placeholder="e.g. 9876543210"
                       value={editPhone}
                       onChange={e => setEditPhone(e.target.value)}
                     />
@@ -580,12 +580,12 @@ export default function Players({
                     <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isUpdating}>
                       {isUpdating ? 'Updating...' : 'Save Changes'}
                     </button>
-                    <button 
-                      type="button" 
-                      onClick={handleDeletePlayerClick} 
-                      className="btn btn-danger" 
-                      style={{ 
-                        background: 'var(--accent)', 
+                    <button
+                      type="button"
+                      onClick={handleDeletePlayerClick}
+                      className="btn btn-danger"
+                      style={{
+                        background: 'var(--accent)',
                         borderColor: 'transparent',
                         flex: '0 0 auto',
                         padding: '12px 18px',

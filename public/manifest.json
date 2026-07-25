@@ -1,0 +1,18 @@
+{
+  "name": "11 Parkerz",
+  "short_name": "11 Parkerz",
+  "description": "England Cricket Jersey Theme Sports Tracker & Ledger",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#050b14",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
