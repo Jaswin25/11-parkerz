@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Plus, Trash2, Calendar, MapPin, Users, X } from 'lucide-react';
+import { Award, Plus, Trash2, Calendar, MapPin, Users, X, Edit } from 'lucide-react';
 import { Player, PlayerCategory, Match, MatchResult, SettlementMode } from '../types';
 
 interface MatchesProps {
@@ -7,6 +7,7 @@ interface MatchesProps {
   matches: Match[];
   onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onDeleteMatch: (id: string) => Promise<void>;
+  onUpdateMatch: (id: string, match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onAddPlayer: (name: string, category: PlayerCategory, phone?: string) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -16,6 +17,7 @@ export default function Matches({
   matches,
   onAddMatch,
   onDeleteMatch,
+  onUpdateMatch,
   onAddPlayer,
   showToast
 }: MatchesProps) {
@@ -34,6 +36,7 @@ export default function Matches({
   const [notes, setNotes] = useState('');
   const [matchNumber, setMatchNumber] = useState('Match 1');
   const [submitting, setSubmitting] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
 
   const [quickPlayerName, setQuickPlayerName] = useState('');
 
@@ -64,6 +67,42 @@ export default function Matches({
     }
   };
 
+  const handleEditClick = (match: Match) => {
+    setEditingMatch(match);
+    setDate(match.date);
+    setOpponent(match.opponent);
+    setGround(match.ground);
+    setBetAmount(match.bet_amount.toString());
+    setResult(match.result);
+    setSettledVia(match.settled_via);
+    setWhoPlayed(match.who_played || []);
+    setNotes(match.notes || '');
+    setMatchNumber(match.match_number || 'Match 1');
+
+    if (match.settled_via === 'Both') {
+      setCashSplit(Math.abs(match.cash_amount).toString());
+      setGpaySplit(Math.abs(match.gpay_amount).toString());
+    } else {
+      setCashSplit('');
+      setGpaySplit('');
+    }
+    setShowAddForm(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMatch(null);
+    setOpponent('');
+    setGround('');
+    setBetAmount('');
+    setCashSplit('');
+    setGpaySplit('');
+    setWhoPlayed([]);
+    setNotes('');
+    setMatchNumber('Match 1');
+    setDate(new Date().toISOString().split('T')[0]);
+    setShowAddForm(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!opponent.trim() || !betAmount) return;
@@ -92,21 +131,40 @@ export default function Matches({
     }
 
     try {
-      await onAddMatch({
-        date,
-        opponent: opponent.trim(),
-        ground: ground.trim() || 'Home Ground',
-        bet_amount: bet,
-        result,
-        amount_won_lost: winLossAmount,
-        settled_via: settledVia,
-        cash_amount: cashAmt,
-        gpay_amount: gpayAmt,
-        who_played: whoPlayed,
-        notes: notes.trim(),
-        match_number: matchNumber
-      });
-      showToast(`Match vs ${opponent.trim()} (${result}) recorded!`);
+      if (editingMatch) {
+        await onUpdateMatch(editingMatch.id, {
+          date,
+          opponent: opponent.trim(),
+          ground: ground.trim() || 'Home Ground',
+          bet_amount: bet,
+          result,
+          amount_won_lost: winLossAmount,
+          settled_via: settledVia,
+          cash_amount: cashAmt,
+          gpay_amount: gpayAmt,
+          who_played: whoPlayed,
+          notes: notes.trim(),
+          match_number: matchNumber
+        });
+        showToast(`Match vs ${opponent.trim()} updated successfully!`);
+        setEditingMatch(null);
+      } else {
+        await onAddMatch({
+          date,
+          opponent: opponent.trim(),
+          ground: ground.trim() || 'Home Ground',
+          bet_amount: bet,
+          result,
+          amount_won_lost: winLossAmount,
+          settled_via: settledVia,
+          cash_amount: cashAmt,
+          gpay_amount: gpayAmt,
+          who_played: whoPlayed,
+          notes: notes.trim(),
+          match_number: matchNumber
+        });
+        showToast(`Match vs ${opponent.trim()} (${result}) recorded!`);
+      }
       
       // Reset form
       setOpponent('');
@@ -119,7 +177,7 @@ export default function Matches({
       setMatchNumber('Match 1');
       setShowAddForm(false);
     } catch (e: any) {
-      showToast(e.message || 'Error recording match', 'error');
+      showToast(e.message || `Error ${editingMatch ? 'updating' : 'recording'} match`, 'error');
     }
     setSubmitting(false);
   };
@@ -154,17 +212,23 @@ export default function Matches({
           Matches Betting Books
         </h2>
         <button 
-          onClick={() => setShowAddForm(!showAddForm)} 
+          onClick={() => {
+            if (editingMatch) {
+              handleCancelEdit();
+            } else {
+              setShowAddForm(!showAddForm);
+            }
+          }} 
           className="btn btn-primary"
         >
-          {showAddForm ? <><X size={18} /> Close Form</> : <><Plus size={18} /> Record Match</>}
+          {showAddForm ? (editingMatch ? 'Cancel Edit' : <><X size={18} /> Close Form</>) : <><Plus size={18} /> Record Match</>}
         </button>
       </div>
 
       {/* Add Match Collapsible Form */}
       {showAddForm && (
         <div className="glass-panel fade-in" style={{ border: '1px solid var(--secondary)' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Record New Match</h3>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>{editingMatch ? 'Edit Match Details' : 'Record New Match'}</h3>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '6px' }}>
@@ -292,9 +356,16 @@ export default function Matches({
               <input type="text" placeholder="Top scorer, wicket taker, match highlights..." value={notes} onChange={e => setNotes(e.target.value)} />
             </div>
 
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Recording Match...' : 'Save Match'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              {editingMatch && (
+                <button type="button" className="btn btn-secondary" style={{ padding: '12px 20px' }} onClick={handleCancelEdit}>
+                  Cancel
+                </button>
+              )}
+              <button type="submit" className="btn btn-primary" style={{ padding: '12px 28px' }} disabled={submitting}>
+                {editingMatch ? (submitting ? 'Saving...' : 'Save Changes') : (submitting ? 'Recording Match...' : 'Save Match')}
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -345,13 +416,23 @@ export default function Matches({
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>via {match.settled_via}</span>
                   </div>
 
-                  <button 
-                    onClick={() => handleDelete(match.id, match.opponent, match.bet_amount)} 
-                    className="btn-icon"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      onClick={() => handleEditClick(match)} 
+                      className="btn-icon"
+                      style={{ color: 'var(--text-secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
+                      title="Edit Match"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(match.id, match.opponent, match.bet_amount)} 
+                      className="btn-icon"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
 

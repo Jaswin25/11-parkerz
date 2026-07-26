@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Save, Trash2, CheckSquare, Plus, AlertTriangle, Download } from 'lucide-react';
+import { Calendar, Save, Trash2, CheckSquare, Plus, AlertTriangle, Download, Edit } from 'lucide-react';
 import { Player, AttendanceWeek, AttendanceRecord, PaymentMode } from '../types';
 
 interface AttendanceProps {
@@ -8,6 +8,7 @@ interface AttendanceProps {
   attendance: AttendanceRecord[];
   onAddWeek: (date: string) => Promise<AttendanceWeek>;
   onDeleteWeek: (weekId: string) => Promise<void>;
+  onUpdateWeek: (weekId: string, date: string) => Promise<void>;
   onSaveAttendance: (weekId: string, records: Omit<AttendanceRecord, 'id' | 'week_id' | 'created_at'>[]) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -18,6 +19,7 @@ export default function Attendance({
   attendance,
   onAddWeek,
   onDeleteWeek,
+  onUpdateWeek,
   onSaveAttendance,
   showToast
 }: AttendanceProps) {
@@ -249,6 +251,29 @@ export default function Attendance({
     }
   };
 
+  // Edit current session week date
+  const handleEditWeekDate = async () => {
+    if (!selectedWeekId) return;
+    const week = weeks.find(w => w.id === selectedWeekId);
+    if (!week) return;
+
+    const newDate = window.prompt(`Edit session date for ${week.date}:`, week.date);
+    if (!newDate || newDate === week.date) return;
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(newDate)) {
+      showToast('Invalid date format! Please use YYYY-MM-DD.', 'error');
+      return;
+    }
+
+    try {
+      await onUpdateWeek(selectedWeekId, newDate);
+      showToast(`Session date updated to ${newDate}!`);
+    } catch (err: any) {
+      showToast(err.message || 'Error updating week date', 'error');
+    }
+  };
+
   // Delete current session week
   const handleDeleteWeek = async () => {
     if (!selectedWeekId) return;
@@ -394,9 +419,24 @@ export default function Attendance({
           )}
 
           {selectedWeekId && (
-            <button onClick={handleDeleteWeek} className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.2)' }}>
-              <Trash2 size={18} />
-            </button>
+            <>
+              <button 
+                onClick={handleEditWeekDate} 
+                className="btn btn-secondary" 
+                style={{ color: 'var(--secondary)', borderColor: 'rgba(56,189,248,0.2)' }}
+                title="Edit Session Date"
+              >
+                <Edit size={18} />
+              </button>
+              <button 
+                onClick={handleDeleteWeek} 
+                className="btn btn-secondary" 
+                style={{ color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.2)' }}
+                title="Delete Session"
+              >
+                <Trash2 size={18} />
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -275,6 +275,55 @@ const LocalDb = {
     const payments = LocalDb.getExtraPayments();
     const filtered = payments.filter(p => p.id !== id);
     localStorage.setItem(EXTRA_PAYMENTS_KEY, JSON.stringify(filtered));
+  },
+
+  updateExpense: (id: string, expense: Omit<Expense, 'id' | 'created_at'>): Expense => {
+    const expenses = LocalDb.getExpenses();
+    const index = expenses.findIndex(e => e.id === id);
+    if (index === -1) throw new Error('Expense not found');
+    expenses[index] = {
+      ...expenses[index],
+      ...expense
+    };
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+    return expenses[index];
+  },
+
+  updateMatch: (id: string, match: Omit<Match, 'id' | 'created_at'>): Match => {
+    const matches = LocalDb.getMatches();
+    const index = matches.findIndex(m => m.id === id);
+    if (index === -1) throw new Error('Match not found');
+    matches[index] = {
+      ...matches[index],
+      ...match
+    };
+    localStorage.setItem(MATCHES_KEY, JSON.stringify(matches));
+    return matches[index];
+  },
+
+  updateExtraPayment: (id: string, payment: Omit<ExtraPayment, 'id' | 'created_at'>): ExtraPayment => {
+    const payments = LocalDb.getExtraPayments();
+    const index = payments.findIndex(p => p.id === id);
+    if (index === -1) throw new Error('Extra payment not found');
+    payments[index] = {
+      ...payments[index],
+      ...payment
+    };
+    localStorage.setItem(EXTRA_PAYMENTS_KEY, JSON.stringify(payments));
+    return payments[index];
+  },
+
+  updateWeek: (id: string, date: string): AttendanceWeek => {
+    const weeks = LocalDb.getWeeks();
+    const index = weeks.findIndex(w => w.id === id);
+    if (index === -1) throw new Error('Week not found');
+    weeks[index] = {
+      ...weeks[index],
+      date
+    };
+    weeks.sort((a, b) => b.date.localeCompare(a.date));
+    LocalDb.saveWeeks(weeks);
+    return weeks[index];
   }
 };
 
@@ -566,6 +615,22 @@ export const DbService = {
     LocalDb.deleteWeek(weekId);
   },
 
+  updateWeek: async (weekId: string, date: string): Promise<AttendanceWeek> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('attendance_weeks')
+        .update({ date })
+        .eq('id', weekId)
+        .select();
+      if (error) {
+        console.error('Supabase updateWeek error', error);
+        throw error;
+      }
+      return data[0];
+    }
+    return LocalDb.updateWeek(weekId, date);
+  },
+
   // --- Attendance API ---
   getAttendance: async (weekId: string): Promise<AttendanceRecord[]> => {
     if (supabase) {
@@ -665,6 +730,22 @@ export const DbService = {
     LocalDb.deleteExpense(id);
   },
 
+  updateExpense: async (id: string, expense: Omit<Expense, 'id' | 'created_at'>): Promise<Expense> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('expenses')
+        .update(expense)
+        .eq('id', id)
+        .select();
+      if (error) {
+        console.error('Supabase updateExpense error', error);
+        throw error;
+      }
+      return data[0];
+    }
+    return LocalDb.updateExpense(id, expense);
+  },
+
   // --- Matches API ---
   getMatches: async (): Promise<Match[]> => {
     if (supabase) {
@@ -762,6 +843,57 @@ export const DbService = {
     LocalDb.deleteMatch(id);
   },
 
+  updateMatch: async (id: string, match: Omit<Match, 'id' | 'created_at'>): Promise<Match> => {
+    if (supabase) {
+      const { data: mData, error: mErr } = await supabase
+        .from('matches')
+        .update({
+          date: match.date,
+          opponent: match.opponent,
+          ground: match.ground,
+          bet_amount: match.bet_amount,
+          result: match.result,
+          amount_won_lost: match.amount_won_lost,
+          settled_via: match.settled_via,
+          cash_amount: match.cash_amount,
+          gpay_amount: match.gpay_amount,
+          notes: match.notes,
+          match_number: match.match_number || 'Match 1'
+        })
+        .eq('id', id)
+        .select();
+      if (mErr) {
+        console.error('Supabase updateMatch error', mErr);
+        throw mErr;
+      }
+      
+      // Update match players mapping
+      const { error: delErr } = await supabase.from('match_players').delete().eq('match_id', id);
+      if (delErr) {
+        console.error('Supabase delete match_players error', delErr);
+        throw delErr;
+      }
+      if (match.who_played.length > 0) {
+        const { error: insErr } = await supabase.from('match_players').insert(
+          match.who_played.map(player_id => ({
+            match_id: id,
+            player_id
+          }))
+        );
+        if (insErr) {
+          console.error('Supabase insert match_players error', insErr);
+          throw insErr;
+        }
+      }
+      
+      return {
+        ...mData[0],
+        who_played: match.who_played
+      };
+    }
+    return LocalDb.updateMatch(id, match);
+  },
+
   // --- Extra Payments API ---
   getExtraPayments: async (): Promise<ExtraPayment[]> => {
     if (supabase) {
@@ -800,6 +932,22 @@ export const DbService = {
       return;
     }
     LocalDb.deleteExtraPayment(id);
+  },
+
+  updateExtraPayment: async (id: string, payment: Omit<ExtraPayment, 'id' | 'created_at'>): Promise<ExtraPayment> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('extra_payments')
+        .update(payment)
+        .eq('id', id)
+        .select();
+      if (error) {
+        console.error('Supabase updateExtraPayment error', error);
+        throw error;
+      }
+      return data[0];
+    }
+    return LocalDb.updateExtraPayment(id, payment);
   }
 };
 

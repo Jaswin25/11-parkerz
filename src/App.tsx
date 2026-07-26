@@ -182,6 +182,26 @@ export default function App() {
     await loadData();
   };
 
+  const handleUpdateExpense = async (id: string, expense: Omit<Expense, 'id' | 'created_at'>) => {
+    await DbService.updateExpense(id, expense);
+    await loadData();
+  };
+
+  const handleUpdateMatch = async (id: string, match: Omit<Match, 'id' | 'created_at'>) => {
+    await DbService.updateMatch(id, match);
+    await loadData();
+  };
+
+  const handleUpdateExtraPayment = async (id: string, payment: Omit<ExtraPayment, 'id' | 'created_at'>) => {
+    await DbService.updateExtraPayment(id, payment);
+    await loadData();
+  };
+
+  const handleUpdateWeek = async (weekId: string, date: string) => {
+    await DbService.updateWeek(weekId, date);
+    await loadData();
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -473,6 +493,7 @@ export default function App() {
               onAddWeek={handleAddWeek}
               onDeleteWeek={handleDeleteWeek}
               onSaveAttendance={handleSaveAttendance}
+              onUpdateWeek={handleUpdateWeek}
               showToast={showToast}
             />
           )}
@@ -488,6 +509,9 @@ export default function App() {
               onDeleteExpense={handleDeleteExpense}
               onDeleteMatch={handleDeleteMatch}
               onDeleteExtraPayment={handleDeleteExtraPayment}
+              onUpdateExpense={handleUpdateExpense}
+              onUpdateMatch={handleUpdateMatch}
+              onUpdateExtraPayment={handleUpdateExtraPayment}
               showToast={showToast}
             />
           )}
@@ -498,6 +522,7 @@ export default function App() {
               matches={matches}
               onAddMatch={handleAddMatch}
               onDeleteMatch={handleDeleteMatch}
+              onUpdateMatch={handleUpdateMatch}
               onAddPlayer={handleAddPlayer}
               showToast={showToast}
             />
@@ -508,6 +533,7 @@ export default function App() {
               expenses={expenses}
               onAddExpense={handleAddExpense}
               onDeleteExpense={handleDeleteExpense}
+              onUpdateExpense={handleUpdateExpense}
               showToast={showToast}
             />
           )}

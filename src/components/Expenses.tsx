@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Trash2, Calendar, Search, Download, Filter, DollarSign, Tag } from 'lucide-react';
+import { Plus, Trash2, Calendar, Search, Download, Filter, DollarSign, Tag, Edit } from 'lucide-react';
 import { Expense, ExpenseCategory } from '../types';
 
 interface ExpensesProps {
   expenses: Expense[];
   onAddExpense: (expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onUpdateExpense: (id: string, expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -15,6 +16,7 @@ export default function Expenses({
   expenses,
   onAddExpense,
   onDeleteExpense,
+  onUpdateExpense,
   showToast
 }: ExpensesProps) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -30,30 +32,64 @@ export default function Expenses({
   const [paidFrom, setPaidFrom] = useState<'Cash' | 'GPay'>('GPay');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   // Handlers
+  const handleEditClick = (exp: Expense) => {
+    setEditingExpense(exp);
+    setDate(exp.date);
+    setItem(exp.item);
+    setCategory(exp.category);
+    setAmount(exp.amount.toString());
+    setPaidFrom(exp.paid_from);
+    setNotes(exp.notes || '');
+    setShowAddForm(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExpense(null);
+    setItem('');
+    setAmount('');
+    setNotes('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setShowAddForm(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item.trim() || !amount) return;
 
     setSubmitting(true);
     try {
-      await onAddExpense({
-        date,
-        item: item.trim(),
-        category,
-        amount: parseFloat(amount),
-        paid_from: paidFrom,
-        notes: notes.trim()
-      });
-      showToast(`Expense of ₹${amount} for "${item.trim()}" recorded!`);
+      if (editingExpense) {
+        await onUpdateExpense(editingExpense.id, {
+          date,
+          item: item.trim(),
+          category,
+          amount: parseFloat(amount),
+          paid_from: paidFrom,
+          notes: notes.trim()
+        });
+        showToast(`Expense for "${item.trim()}" updated successfully!`);
+        setEditingExpense(null);
+      } else {
+        await onAddExpense({
+          date,
+          item: item.trim(),
+          category,
+          amount: parseFloat(amount),
+          paid_from: paidFrom,
+          notes: notes.trim()
+        });
+        showToast(`Expense of ₹${amount} for "${item.trim()}" recorded!`);
+      }
       // Reset form
       setItem('');
       setAmount('');
       setNotes('');
       setShowAddForm(false);
     } catch (err: any) {
-      showToast(err.message || 'Error recording expense', 'error');
+      showToast(err.message || `Error ${editingExpense ? 'updating' : 'recording'} expense`, 'error');
     }
     setSubmitting(false);
   };
@@ -149,10 +185,16 @@ export default function Expenses({
         </div>
 
         <button 
-          onClick={() => setShowAddForm(!showAddForm)} 
+          onClick={() => {
+            if (editingExpense) {
+              handleCancelEdit();
+            } else {
+              setShowAddForm(!showAddForm);
+            }
+          }} 
           className="btn btn-primary"
         >
-          {showAddForm ? 'Close Form' : <><Plus size={18} /> Record Expense</>}
+          {showAddForm ? (editingExpense ? 'Cancel Edit' : 'Close Form') : <><Plus size={18} /> Record Expense</>}
         </button>
       </div>
 
@@ -161,7 +203,7 @@ export default function Expenses({
         <div className="glass-panel" style={{ animation: 'fadeIn 0.25s ease' }}>
           <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Tag size={18} style={{ color: 'var(--secondary)' }} />
-            New Expense Payout Details
+            {editingExpense ? 'Edit Expense Details' : 'New Expense Payout Details'}
           </h3>
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
@@ -214,9 +256,19 @@ export default function Expenses({
               <input type="text" placeholder="Wicket stamps for matches, team snacks, tapes for SG bat..." value={notes} onChange={e => setNotes(e.target.value)} />
             </div>
 
-            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '4px', gap: '8px' }}>
+              {editingExpense && (
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ padding: '12px 20px' }} 
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </button>
+              )}
               <button type="submit" className="btn btn-primary" style={{ padding: '12px 28px' }} disabled={submitting}>
-                {submitting ? 'Recording Payout...' : 'Save Expense Record'}
+                {editingExpense ? (submitting ? 'Updating...' : 'Save Changes') : (submitting ? 'Recording Payout...' : 'Save Expense Record')}
               </button>
             </div>
           </form>
@@ -329,14 +381,24 @@ export default function Expenses({
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button 
-                      onClick={() => handleDelete(exp.id, exp.item, exp.amount)}
-                      className="btn-icon" 
-                      style={{ color: 'var(--accent)', borderColor: 'rgba(225,29,72,0.1)' }}
-                      title="Delete expense"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                      <button 
+                        onClick={() => handleEditClick(exp)}
+                        className="btn-icon" 
+                        style={{ color: 'var(--secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
+                        title="Edit expense"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(exp.id, exp.item, exp.amount)}
+                        className="btn-icon" 
+                        style={{ color: 'var(--accent)', borderColor: 'rgba(225,29,72,0.1)' }}
+                        title="Delete expense"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
