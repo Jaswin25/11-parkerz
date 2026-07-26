@@ -324,6 +324,18 @@ const LocalDb = {
     weeks.sort((a, b) => b.date.localeCompare(a.date));
     LocalDb.saveWeeks(weeks);
     return weeks[index];
+  },
+
+  updateAttendanceRecord: (id: string, record: Omit<AttendanceRecord, 'id' | 'week_id' | 'player_id' | 'created_at'>): AttendanceRecord => {
+    const all = LocalDb.getAttendanceAll();
+    const index = all.findIndex(a => a.id === id);
+    if (index === -1) throw new Error('Attendance record not found');
+    all[index] = {
+      ...all[index],
+      ...record
+    };
+    localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(all));
+    return all[index];
   }
 };
 
@@ -688,6 +700,22 @@ export const DbService = {
       return;
     }
     LocalDb.saveAttendance(weekId, records);
+  },
+
+  updateAttendanceRecord: async (id: string, record: Omit<AttendanceRecord, 'id' | 'week_id' | 'player_id' | 'created_at'>): Promise<AttendanceRecord> => {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .update(record)
+        .eq('id', id)
+        .select();
+      if (error) {
+        console.error('Supabase updateAttendanceRecord error', error);
+        throw error;
+      }
+      return data[0];
+    }
+    return LocalDb.updateAttendanceRecord(id, record);
   },
 
   // --- Expenses API ---

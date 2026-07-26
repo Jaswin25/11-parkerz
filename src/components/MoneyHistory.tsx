@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Filter, Search, Trash2, Download, Edit, X } from 'lucide-react';
-import { Player, AttendanceWeek, AttendanceRecord, Expense, Match, ExtraPayment, ExpenseCategory, MatchResult, SettlementMode } from '../types';
+import { Player, AttendanceWeek, AttendanceRecord, Expense, Match, ExtraPayment, ExpenseCategory, MatchResult, SettlementMode, PaymentMode } from '../types';
 
 interface MoneyHistoryProps {
   players: Player[];
@@ -15,6 +15,7 @@ interface MoneyHistoryProps {
   onUpdateExpense: (id: string, expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
   onUpdateMatch: (id: string, match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onUpdateExtraPayment: (id: string, payment: { player_id: string; date: string; amount: number; payment_mode: 'Cash' | 'GPay' | 'Both'; cash_amount: number; gpay_amount: number; notes?: string }) => Promise<void>;
+  onUpdateAttendanceRecord: (id: string, record: Omit<AttendanceRecord, 'id' | 'week_id' | 'player_id' | 'created_at'>) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -31,6 +32,7 @@ export default function MoneyHistory({
   onUpdateExpense,
   onUpdateMatch,
   onUpdateExtraPayment,
+  onUpdateAttendanceRecord,
   showToast
 }: MoneyHistoryProps) {
   const [walletFilter, setWalletFilter] = useState<'All' | 'Cash' | 'GPay'>('All');
@@ -64,6 +66,14 @@ export default function MoneyHistory({
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'GPay' | 'Both'>('GPay');
   const [paymentCashAmount, setPaymentCashAmount] = useState('');
   const [paymentGpayAmount, setPaymentGpayAmount] = useState('');
+
+  // Attendance-specific states
+  const [attStatus, setAttStatus] = useState<'Present' | 'Absent'>('Present');
+  const [attDueAmount, setAttDueAmount] = useState('');
+  const [attPaymentMode, setAttPaymentMode] = useState<PaymentMode>('GPay');
+  const [attCashAmount, setAttCashAmount] = useState('');
+  const [attGpayAmount, setAttGpayAmount] = useState('');
+  const [attPlayerName, setAttPlayerName] = useState('');
 
   const [saving, setSaving] = useState(false);
 
@@ -116,6 +126,22 @@ export default function MoneyHistory({
         } else {
           setPaymentCashAmount('');
           setPaymentGpayAmount('');
+        }
+      }
+    } else if (t.id.startsWith('att-')) {
+      const attRec = attendance.find(a => a.id === t.dbId);
+      if (attRec) {
+        const player = players.find(p => p.id === attRec.player_id);
+        setAttPlayerName(player ? player.name : 'Unknown Player');
+        setAttStatus(attRec.status);
+        setAttDueAmount(attRec.due_amount.toString());
+        setAttPaymentMode(attRec.payment_mode);
+        if (attRec.payment_mode === 'Both') {
+          setAttCashAmount(attRec.cash_amount.toString());
+          setAttGpayAmount(attRec.gpay_amount.toString());
+        } else {
+          setAttCashAmount('');
+          setAttGpayAmount('');
         }
       }
     }
@@ -202,6 +228,37 @@ export default function MoneyHistory({
           notes: editNotes.trim()
         });
         showToast('Direct payment details updated successfully!');
+      } else if (editingItem.id.startsWith('att-')) {
+        let cashAmt = 0;
+        let gpayAmt = 0;
+
+        if (attPaymentMode === 'Cash') {
+          cashAmt = amt;
+        } else if (attPaymentMode === 'GPay') {
+          gpayAmt = amt;
+        } else if (attPaymentMode === 'Both') {
+          cashAmt = parseFloat(attCashAmount) || 0;
+          gpayAmt = parseFloat(attGpayAmount) || 0;
+          if (cashAmt + gpayAmt !== amt) {
+            showToast('Sum of Cash and GPay splits must equal the total Paid Amount!', 'error');
+            setSaving(false);
+            return;
+          }
+        }
+
+        const due = parseFloat(attDueAmount) || 0;
+        const pending = attStatus === 'Present' ? Math.max(0, due - amt) : 0;
+
+        await onUpdateAttendanceRecord(editingItem.dbId, {
+          status: attStatus,
+          due_amount: attStatus === 'Present' ? due : 0,
+          paid_amount: amt,
+          pending_amount: pending,
+          payment_mode: attStatus === 'Present' ? attPaymentMode : 'None',
+          cash_amount: attStatus === 'Present' ? cashAmt : 0,
+          gpay_amount: attStatus === 'Present' ? gpayAmt : 0
+        });
+        showToast('Weekly collection attendance record updated successfully!');
       }
       setEditingItem(null);
     } catch (err: any) {
@@ -232,7 +289,16 @@ export default function MoneyHistory({
         cash_amount: rec.cash_amount,
         gpay_amount: rec.gpay_amount,
         playerId: rec.player_id,
-        canDelete: false
+        canDelete: true,
+        deleteAction: () => onUpdateAttendanceRecord(rec.id, {
+          status: rec.status,
+          due_amount: rec.due_amount,
+          paid_amount: 0,
+          pending_amount: rec.status === 'Present' ? rec.due_amount : 0,
+          payment_mode: 'None',
+          cash_amount: 0,
+          gpay_amount: 0
+        })
       });
     }
   });
@@ -623,7 +689,7 @@ export default function MoneyHistory({
           <div className="modal-content" style={{ padding: '24px', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '1.25rem' }}>
-                Edit {editingItem.id.startsWith('exp-') ? 'Expense Details' : editingItem.id.startsWith('match-') ? 'Match Record' : 'Direct Payment'}
+                Edit {editingItem.id.startsWith('exp-') ? 'Expense Details' : editingItem.id.startsWith('match-') ? 'Match Record' : editingItem.id.startsWith('att-') ? 'Weekly Collection' : 'Direct Payment'}
               </h3>
               <button onClick={() => setEditingItem(null)} className="btn-icon"><X size={18} /></button>
             </div>
@@ -633,13 +699,19 @@ export default function MoneyHistory({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Date</label>
-                  <input type="date" required value={editDate} onChange={e => setEditDate(e.target.value)} />
+                  <input 
+                    type="date" 
+                    required 
+                    value={editDate} 
+                    onChange={e => setEditDate(e.target.value)} 
+                    disabled={editingItem.id.startsWith('att-')}
+                  />
                 </div>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {editingItem.id.startsWith('match-') ? 'Bet Amount (₹)' : 'Amount (₹)'}
                   </label>
-                  <input type="number" required min="1" placeholder="Amount" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+                  <input type="number" required min="0" placeholder="Amount" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
                 </div>
               </div>
 
@@ -769,6 +841,57 @@ export default function MoneyHistory({
                         <input type="number" required value={paymentGpayAmount} onChange={e => setPaymentGpayAmount(e.target.value)} />
                       </div>
                     </div>
+                  )}
+                </>
+              )}
+
+              {/* Attendance-Specific Fields */}
+              {editingItem.id.startsWith('att-') && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gap: '6px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Player Name</label>
+                      <input type="text" readOnly disabled value={attPlayerName} />
+                    </div>
+                    <div style={{ display: 'grid', gap: '6px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Status</label>
+                      <select value={attStatus} onChange={e => setAttStatus(e.target.value as 'Present' | 'Absent')}>
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {attStatus === 'Present' && (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div style={{ display: 'grid', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Due Amount (₹)</label>
+                          <input type="number" required value={attDueAmount} onChange={e => setAttDueAmount(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'grid', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Payment Mode</label>
+                          <select value={attPaymentMode} onChange={e => setAttPaymentMode(e.target.value as PaymentMode)}>
+                            <option value="GPay">GPay</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Both">Both (Split)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {attPaymentMode === 'Both' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: 'rgba(255, 255, 255, 0.02)', padding: '12px', borderRadius: '8px' }}>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <label style={{ fontSize: '0.80rem', color: 'var(--text-secondary)' }}>Cash Portion (₹)</label>
+                            <input type="number" required value={attCashAmount} onChange={e => setAttCashAmount(e.target.value)} />
+                          </div>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <label style={{ fontSize: '0.80rem', color: 'var(--text-secondary)' }}>GPay Portion (₹)</label>
+                            <input type="number" required value={attGpayAmount} onChange={e => setAttGpayAmount(e.target.value)} />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}

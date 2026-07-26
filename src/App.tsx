@@ -202,6 +202,11 @@ export default function App() {
     await loadData();
   };
 
+  const handleUpdateAttendanceRecord = async (id: string, record: Omit<AttendanceRecord, 'id' | 'week_id' | 'player_id' | 'created_at'>) => {
+    await DbService.updateAttendanceRecord(id, record);
+    await loadData();
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -512,6 +517,7 @@ export default function App() {
               onUpdateExpense={handleUpdateExpense}
               onUpdateMatch={handleUpdateMatch}
               onUpdateExtraPayment={handleUpdateExtraPayment}
+              onUpdateAttendanceRecord={handleUpdateAttendanceRecord}
               showToast={showToast}
             />
           )}
