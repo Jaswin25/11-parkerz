@@ -1,9 +1,26 @@
-import { useState } from 'react';
-import { 
-  DollarSign, TrendingUp, Users, Calendar, AlertCircle, PlusCircle, 
+import { useState, useEffect } from 'react';
+import {
+  DollarSign, TrendingUp, Users, Calendar, AlertCircle, PlusCircle,
   ArrowRightCircle, PiggyBank, Plus, X, Award
 } from 'lucide-react';
-import { Player, PlayerCategory, ExpenseCategory, MatchResult, SettlementMode, WalletBalances } from '../types';
+import { Player, PlayerCategory, ExpenseCategory, MatchResult, SettlementMode, WalletBalances, Match } from '../types';
+
+const getAutoTotalNoOfMatches = (targetDate: string, existingMatches: Match[]) => {
+  const dates = existingMatches.map(m => m.date);
+  if (!dates.includes(targetDate)) {
+    dates.push(targetDate);
+  }
+  const uniqueSortedDates = Array.from(new Set(dates)).sort((a, b) => a.localeCompare(b));
+  const idx = uniqueSortedDates.indexOf(targetDate);
+  return idx !== -1 ? (idx + 1).toString() : '1';
+};
+
+const getAutoDailyMatchNumber = (targetDate: string, existingMatches: Match[]) => {
+  const matchesOnDate = existingMatches.filter(m => m.date === targetDate);
+  const nextMatchNum = matchesOnDate.length + 1;
+  const cappedNum = Math.min(nextMatchNum, 5);
+  return cappedNum.toString();
+};
 
 interface DashboardProps {
   balances: WalletBalances;
@@ -14,6 +31,7 @@ interface DashboardProps {
   onNavigate: (tab: string) => void;
   onAddPlayer: (name: string, category: PlayerCategory, phone?: string) => Promise<void>;
   onAddExpense: (expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
+  matches: Match[];
   onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
   onAddExtraPayment: (payment: { player_id: string; date: string; amount: number; payment_mode: 'Cash' | 'GPay' | 'Both'; cash_amount: number; gpay_amount: number; notes?: string }) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -22,6 +40,7 @@ interface DashboardProps {
 export default function Dashboard({
   balances,
   players,
+  matches,
   latestWeekDate,
   latestWeekPresentCount,
   latestWeekCollected,
@@ -61,6 +80,13 @@ export default function Dashboard({
   const [matchWhoPlayed, setMatchWhoPlayed] = useState<string[]>([]);
   const [matchNotes, setMatchNotes] = useState('');
   const [matchNumber, setMatchNumber] = useState('Match 1');
+  const [totalMatches, setTotalMatches] = useState('');
+
+  // Sync states with the matches count
+  useEffect(() => {
+    setMatchNumber(getAutoDailyMatchNumber(matchDate, matches));
+    setTotalMatches(getAutoTotalNoOfMatches(matchDate, matches));
+  }, [matches, matchDate]);
 
   const [paymentPlayerId, setPaymentPlayerId] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -110,14 +136,17 @@ export default function Dashboard({
   const handleAddMatchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!matchOpponent.trim() || !matchBet) return;
-    
+
     const bet = parseFloat(matchBet);
-    let winLossAmount = matchResult === 'Win' ? bet : -bet;
-    
+    let winLossAmount = matchResult === 'Win' ? bet : matchResult === 'Loss' ? -bet : 0;
+
     let cashAmt = 0;
     let gpayAmt = 0;
 
-    if (matchSettledVia === 'Cash') {
+    if (matchResult === 'Draw') {
+      cashAmt = 0;
+      gpayAmt = 0;
+    } else if (matchSettledVia === 'Cash') {
       cashAmt = winLossAmount;
     } else if (matchSettledVia === 'GPay') {
       gpayAmt = winLossAmount;
@@ -145,7 +174,7 @@ export default function Dashboard({
         gpay_amount: gpayAmt,
         who_played: matchWhoPlayed,
         notes: matchNotes.trim(),
-        match_number: matchNumber
+        match_number: `${matchNumber}|${totalMatches}`
       });
       showToast(`Recorded match vs ${matchOpponent.trim()} (${matchResult})!`);
       setMatchOpponent('');
@@ -155,7 +184,6 @@ export default function Dashboard({
       setMatchGpaySplit('');
       setMatchWhoPlayed([]);
       setMatchNotes('');
-      setMatchNumber('Match 1');
       setShowAddMatch(false);
     } catch (err: any) {
       showToast(err.message || 'Error adding match', 'error');
@@ -206,9 +234,9 @@ export default function Dashboard({
   };
 
   const toggleMatchPlayer = (playerId: string) => {
-    setMatchWhoPlayed(prev => 
-      prev.includes(playerId) 
-        ? prev.filter(id => id !== playerId) 
+    setMatchWhoPlayed(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
         : [...prev, playerId]
     );
   };
@@ -223,14 +251,14 @@ export default function Dashboard({
 
   return (
     <div className="fade-in" style={{ display: 'grid', gap: '24px' }}>
-      
+
       {/* Wallet Cards Section */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
         gap: '16px'
       }}>
-        
+
         {/* Wallet Cash */}
         <div className="glass-panel" style={{
           display: 'flex',
@@ -383,7 +411,7 @@ export default function Dashboard({
           <PlusCircle size={20} className="text-secondary" style={{ color: 'var(--secondary)' }} />
           Quick Manager Actions
         </h3>
-        
+
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -392,19 +420,19 @@ export default function Dashboard({
           <button onClick={() => onNavigate('attendance')} className="btn btn-primary" style={{ height: '52px' }}>
             <Calendar size={18} /> Mark Attendance
           </button>
-          
+
           <button onClick={() => setShowAddExpense(true)} className="btn btn-secondary" style={{ height: '52px' }}>
             <Plus size={18} /> Add Expense
           </button>
-          
+
           <button onClick={() => setShowAddMatch(true)} className="btn btn-secondary" style={{ height: '52px' }}>
             <Award size={18} /> Add Match
           </button>
-          
+
           <button onClick={() => setShowAddPlayer(true)} className="btn btn-secondary" style={{ height: '52px' }}>
             <Plus size={18} /> Add Player
           </button>
-          
+
           <button onClick={() => setShowRecordPayment(true)} className="btn btn-secondary" style={{ height: '52px', borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--accent-glow)' }}>
             <DollarSign size={18} /> Record Payment
           </button>
@@ -426,19 +454,19 @@ export default function Dashboard({
             <form onSubmit={handleAddPlayerSubmit} style={{ display: 'grid', gap: '16px' }}>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Full Name</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder="e.g. Sathish Raj" 
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sathish Raj"
                   value={playerName}
                   onChange={e => setPlayerName(e.target.value)}
                 />
               </div>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Phone Number (for WhatsApp)</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. 9876543210" 
+                <input
+                  type="text"
+                  placeholder="e.g. 9876543210"
                   value={playerPhone}
                   onChange={e => setPlayerPhone(e.target.value)}
                 />
@@ -527,11 +555,39 @@ export default function Dashboard({
                   <input type="date" required value={matchDate} onChange={e => setMatchDate(e.target.value)} />
                 </div>
                 <div style={{ display: 'grid', gap: '6px' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Match Number</label>
-                  <select value={matchNumber} onChange={e => setMatchNumber(e.target.value)}>
-                    <option value="Match 1">Match 1</option>
-                    <option value="Match 2">Match 2</option>
-                  </select>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total No of Matches</label>
+                  <input
+                    type="number"
+                    required
+                    value={totalMatches}
+                    onChange={e => setTotalMatches(e.target.value)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--border-radius-sm)',
+                      height: '42px'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gap: '6px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No of Matches</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={matchNumber}
+                    onChange={e => setMatchNumber(e.target.value)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--border-radius-sm)',
+                      height: '42px'
+                    }}
+                  />
                 </div>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Opponent Team</label>
@@ -554,6 +610,7 @@ export default function Dashboard({
                   <select value={matchResult} onChange={e => setMatchResult(e.target.value as MatchResult)}>
                     <option value="Win">Win (+Bet Amount)</option>
                     <option value="Loss">Loss (-Bet Amount)</option>
+                    <option value="Draw">Draw (No Wallet Change)</option>
                   </select>
                 </div>
                 <div style={{ display: 'grid', gap: '6px' }}>
@@ -565,7 +622,7 @@ export default function Dashboard({
                   </select>
                 </div>
               </div>
-              
+
               {matchSettledVia === 'Both' && (
                 <div style={{
                   display: 'grid',
@@ -603,8 +660,8 @@ export default function Dashboard({
                 }}>
                   {players.map(player => (
                     <label key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={matchWhoPlayed.includes(player.id)}
                         onChange={() => toggleMatchPlayer(player.id)}
                       />

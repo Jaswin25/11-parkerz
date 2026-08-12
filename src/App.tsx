@@ -465,6 +465,7 @@ export default function App() {
             <Dashboard 
               balances={balances}
               players={players}
+              matches={matches}
               latestWeekDate={latestWeekDate}
               latestWeekPresentCount={latestWeekPresentCount}
               latestWeekCollected={latestWeekCollected}

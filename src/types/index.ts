@@ -3,7 +3,7 @@
 export type PlayerCategory = 'Bike' | 'School' | 'Normal';
 export type PaymentMode = 'Cash' | 'GPay' | 'Both' | 'None';
 export type ExpenseCategory = 'Bat' | 'Ball' | 'Tape' | 'Stumps' | 'Ground' | 'Jersey' | 'Food' | 'Other';
-export type MatchResult = 'Win' | 'Loss';
+export type MatchResult = 'Win' | 'Loss' | 'Draw';
 export type SettlementMode = 'Cash' | 'GPay' | 'Both';
 
 export interface Player {

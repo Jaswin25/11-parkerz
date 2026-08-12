@@ -1,6 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter, Search, Trash2, Download, Edit, X } from 'lucide-react';
 import { Player, AttendanceWeek, AttendanceRecord, Expense, Match, ExtraPayment, ExpenseCategory, MatchResult, SettlementMode, PaymentMode } from '../types';
+
+const getAutoTotalNoOfMatches = (targetDate: string, existingMatches: Match[]) => {
+  const dates = existingMatches.map(m => m.date);
+  if (!dates.includes(targetDate)) {
+    dates.push(targetDate);
+  }
+  const uniqueSortedDates = Array.from(new Set(dates)).sort((a, b) => a.localeCompare(b));
+  const idx = uniqueSortedDates.indexOf(targetDate);
+  return idx !== -1 ? (idx + 1).toString() : '1';
+};
+
+const getAutoDailyMatchNumber = (targetDate: string, existingMatches: Match[]) => {
+  const matchesOnDate = existingMatches.filter(m => m.date === targetDate);
+  const nextMatchNum = matchesOnDate.length + 1;
+  const cappedNum = Math.min(nextMatchNum, 5);
+  return cappedNum.toString();
+};
+
+const parseMatchNumbers = (matchNumStr: string | undefined, date: string, dateTotalMap: Map<string, number>) => {
+  const str = matchNumStr || '';
+  const defaultTotal = (dateTotalMap.get(date) || 1).toString();
+  let daily = 'Match 1';
+  let total = defaultTotal;
+  if (str.includes('|')) {
+    const [d, t] = str.split('|');
+    daily = d || 'Match 1';
+    total = t || defaultTotal;
+  } else {
+    daily = str || 'Match 1';
+  }
+
+  // Extract number from daily, e.g. "Match 3" -> "3"
+  const digitMatch = daily.match(/\d+/);
+  const dailyDigit = digitMatch ? digitMatch[0] : '1';
+
+  return { daily, total, dailyDigit };
+};
 
 interface MoneyHistoryProps {
   players: Player[];
@@ -35,6 +72,25 @@ export default function MoneyHistory({
   onUpdateAttendanceRecord,
   showToast
 }: MoneyHistoryProps) {
+  // Sort matches chronologically (oldest first) to compute sequence numbers
+  const chronologicalMatches = [...matches].sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return (a.match_number || 'Match 1').localeCompare(b.match_number || 'Match 1');
+  });
+
+  const getMatchSeqNum = (matchId: string) => {
+    const idx = chronologicalMatches.findIndex(m => m.id === matchId);
+    return idx !== -1 ? idx + 1 : 1;
+  };
+
+  // Find all unique dates of matches sorted chronologically
+  const uniqueDates = Array.from(new Set(matches.map(m => m.date))).sort((a, b) => a.localeCompare(b));
+  const dateTotalMap = new Map<string, number>();
+  uniqueDates.forEach((d, idx) => {
+    dateTotalMap.set(d, idx + 1);
+  });
+
   const [walletFilter, setWalletFilter] = useState<'All' | 'Cash' | 'GPay'>('All');
   const [typeFilter, setTypeFilter] = useState<'All' | 'Income' | 'Expense'>('All');
   const [playerFilter, setPlayerFilter] = useState<string>('');
@@ -60,6 +116,7 @@ export default function MoneyHistory({
   const [matchGpaySplit, setMatchGpaySplit] = useState('');
   const [matchWhoPlayed, setMatchWhoPlayed] = useState<string[]>([]);
   const [matchNumber, setMatchNumber] = useState('Match 1');
+  const [totalMatches, setTotalMatches] = useState('');
 
   // ExtraPayment-specific states
   const [paymentPlayerId, setPaymentPlayerId] = useState('');
@@ -77,10 +134,38 @@ export default function MoneyHistory({
 
   const [saving, setSaving] = useState(false);
 
+  // Sync match sequence numbers if editing a match and the user changes the editDate
+  useEffect(() => {
+    if (editingItem && editingItem.id.startsWith('match-')) {
+      const m = matches.find(match => match.id === editingItem.dbId);
+      if (m) {
+        const otherMatches = matches.filter(match => match.id !== m.id);
+        
+        // Re-create local map inside effect to avoid rendering reference issues
+        const uniqueDates = Array.from(new Set(matches.map(match => match.date))).sort((a, b) => a.localeCompare(b));
+        const localMap = new Map<string, number>();
+        uniqueDates.forEach((d, idx) => {
+          localMap.set(d, idx + 1);
+        });
+
+        const parsed = parseMatchNumbers(m.match_number, editDate, localMap);
+
+        // If it contains '|', it has an explicitly saved daily value. If not, it's a default fallback, so we auto-recalculate it.
+        const hasExplicitDaily = m.match_number && m.match_number.includes('|');
+        const autoDaily = getAutoDailyMatchNumber(editDate, otherMatches);
+        setMatchNumber(hasExplicitDaily ? parsed.dailyDigit : autoDaily);
+
+        const seq = getMatchSeqNum(m.id);
+        const autoTotal = getAutoTotalNoOfMatches(editDate, otherMatches);
+        setTotalMatches(parsed.total === seq.toString() ? autoTotal : parsed.total);
+      }
+    }
+  }, [editingItem, editDate]);
+
   const handleCheckboxChange = (playerId: string) => {
-    setMatchWhoPlayed(prev => 
-      prev.includes(playerId) 
-        ? prev.filter(id => id !== playerId) 
+    setMatchWhoPlayed(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
         : [...prev, playerId]
     );
   };
@@ -106,7 +191,9 @@ export default function MoneyHistory({
         setMatchResult(m.result);
         setMatchSettledVia(m.settled_via);
         setMatchWhoPlayed(m.who_played || []);
-        setMatchNumber(m.match_number || 'Match 1');
+        const parsed = parseMatchNumbers(m.match_number, m.date, dateTotalMap);
+        setMatchNumber(parsed.daily);
+        setTotalMatches(parsed.total);
         if (m.settled_via === 'Both') {
           setMatchCashSplit(Math.abs(m.cash_amount).toString());
           setMatchGpaySplit(Math.abs(m.gpay_amount).toString());
@@ -165,11 +252,14 @@ export default function MoneyHistory({
         });
         showToast('Expense updated successfully!');
       } else if (editingItem.id.startsWith('match-')) {
-        const winLossAmt = matchResult === 'Win' ? amt : -amt;
+        const winLossAmt = matchResult === 'Win' ? amt : matchResult === 'Loss' ? -amt : 0;
         let cashAmt = 0;
         let gpayAmt = 0;
 
-        if (matchSettledVia === 'Cash') {
+        if (matchResult === 'Draw') {
+          cashAmt = 0;
+          gpayAmt = 0;
+        } else if (matchSettledVia === 'Cash') {
           cashAmt = winLossAmt;
         } else if (matchSettledVia === 'GPay') {
           gpayAmt = winLossAmt;
@@ -197,7 +287,7 @@ export default function MoneyHistory({
           gpay_amount: gpayAmt,
           who_played: matchWhoPlayed,
           notes: editNotes.trim(),
-          match_number: matchNumber
+          match_number: `${matchNumber}|${totalMatches}`
         });
         showToast('Match details updated successfully!');
       } else if (editingItem.id.startsWith('ext-')) {
@@ -269,14 +359,14 @@ export default function MoneyHistory({
 
   // 1. Compile all income items
   const incomeList: any[] = [];
-  
+
   // Weekly collection income
   attendance.forEach(rec => {
     if (rec.paid_amount > 0) {
       const player = players.find(p => p.id === rec.player_id);
       const week = weeks.find(w => w.id === rec.week_id);
       const date = week ? week.date : 'Unknown Date';
-      
+
       incomeList.push({
         id: `att-${rec.id}`,
         dbId: rec.id,
@@ -410,8 +500,8 @@ export default function MoneyHistory({
 
   if (searchTerm.trim()) {
     const term = searchTerm.toLowerCase();
-    allTransactions = allTransactions.filter(t => 
-      t.title.toLowerCase().includes(term) || 
+    allTransactions = allTransactions.filter(t =>
+      t.title.toLowerCase().includes(term) ||
       t.source.toLowerCase().includes(term) ||
       (t.notes && t.notes.toLowerCase().includes(term))
     );
@@ -474,7 +564,7 @@ export default function MoneyHistory({
 
   return (
     <div className="fade-in" style={{ display: 'grid', gap: '20px' }}>
-      
+
       {/* Filters Panel */}
       <div className="glass-panel" style={{ display: 'grid', gap: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -482,14 +572,14 @@ export default function MoneyHistory({
             <Filter size={18} className="text-secondary" style={{ color: 'var(--secondary)' }} />
             Filter Ledger Logs
           </h3>
-          <button 
-            onClick={downloadCSV} 
-            className="btn btn-secondary" 
-            style={{ 
-              padding: '8px 16px', 
-              fontSize: '0.85rem', 
-              height: '38px', 
-              borderColor: 'var(--secondary)', 
+          <button
+            onClick={downloadCSV}
+            className="btn btn-secondary"
+            style={{
+              padding: '8px 16px',
+              fontSize: '0.85rem',
+              height: '38px',
+              borderColor: 'var(--secondary)',
               color: 'var(--secondary)',
               display: 'flex',
               alignItems: 'center',
@@ -508,9 +598,9 @@ export default function MoneyHistory({
         }}>
           {/* Text Search */}
           <div style={{ position: 'relative' }}>
-            <input 
-              type="text" 
-              placeholder="Search items, notes, teams..." 
+            <input
+              type="text"
+              placeholder="Search items, notes, teams..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{ paddingLeft: '36px' }}
@@ -597,7 +687,7 @@ export default function MoneyHistory({
             <tbody>
               {allTransactions.map(t => {
                 const isIncome = t.type === 'Income';
-                
+
                 return (
                   <tr key={t.id}>
                     {/* Date */}
@@ -633,8 +723,8 @@ export default function MoneyHistory({
                     </td>
 
                     {/* Amount */}
-                    <td style={{ 
-                      fontWeight: 'bold', 
+                    <td style={{
+                      fontWeight: 'bold',
                       color: isIncome ? 'var(--primary)' : 'var(--danger)'
                     }}>
                       {isIncome ? '+' : '-'}{formatCurrency(t.amount)}
@@ -644,17 +734,17 @@ export default function MoneyHistory({
                     <td>
                       {t.canDelete ? (
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button 
-                            onClick={() => handleEditClick(t)} 
-                            className="btn-icon" 
+                          <button
+                            onClick={() => handleEditClick(t)}
+                            className="btn-icon"
                             style={{ border: 'none', background: 'transparent', color: 'var(--secondary)' }}
                             title="Edit transaction entry"
                           >
                             <Edit size={16} />
                           </button>
-                          <button 
-                            onClick={() => handleDelete(t)} 
-                            className="btn-icon" 
+                          <button
+                            onClick={() => handleDelete(t)}
+                            className="btn-icon"
                             style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)' }}
                             title="Delete transaction entry"
                           >
@@ -699,11 +789,11 @@ export default function MoneyHistory({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ display: 'grid', gap: '6px' }}>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Date</label>
-                  <input 
-                    type="date" 
-                    required 
-                    value={editDate} 
-                    onChange={e => setEditDate(e.target.value)} 
+                  <input
+                    type="date"
+                    required
+                    value={editDate}
+                    onChange={e => setEditDate(e.target.value)}
                     disabled={editingItem.id.startsWith('att-')}
                   />
                 </div>
@@ -761,6 +851,7 @@ export default function MoneyHistory({
                       <select value={matchResult} onChange={e => setMatchResult(e.target.value as MatchResult)}>
                         <option value="Win">Win</option>
                         <option value="Loss">Loss</option>
+                        <option value="Draw">Draw</option>
                       </select>
                     </div>
                     <div style={{ display: 'grid', gap: '6px' }}>
@@ -772,11 +863,39 @@ export default function MoneyHistory({
                       </select>
                     </div>
                     <div style={{ display: 'grid', gap: '6px' }}>
-                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Match Number</label>
-                      <select value={matchNumber} onChange={e => setMatchNumber(e.target.value)}>
-                        <option value="Match 1">Match 1</option>
-                        <option value="Match 2">Match 2</option>
-                      </select>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total No of Matches</label>
+                      <input
+                        type="number"
+                        required
+                        value={totalMatches}
+                        onChange={e => setTotalMatches(e.target.value)}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-color)',
+                          padding: '8px 12px',
+                          borderRadius: 'var(--border-radius-sm)',
+                          height: '42px'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gap: '6px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No of Matches</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={matchNumber}
+                        onChange={e => setMatchNumber(e.target.value)}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-color)',
+                          padding: '8px 12px',
+                          borderRadius: 'var(--border-radius-sm)',
+                          height: '42px'
+                        }}
+                      />
                     </div>
                   </div>
 

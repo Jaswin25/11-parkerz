@@ -685,3 +685,9 @@ tr:hover td {
   align-items: center;
   gap: 8px;
 }
+
+.badge-draw {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
