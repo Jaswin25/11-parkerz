@@ -31,6 +31,9 @@ jobs:
 
       - name: Build Web Application
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://lxqhykyuvaakorxisxbf.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4cWh5a3l1dmFha29yeGlzeGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2MTUxNjgsImV4cCI6MjEwMDE5MTE2OH0.aCTfX2Lkl7ToMNi0zl8byGL0ixjKZ1eSm1CGhrvUSUI
 
       - name: Sync Android Assets
         run: npx cap sync android
