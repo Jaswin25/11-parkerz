@@ -605,7 +605,7 @@ export default function Matches({
                       {match.result}
                     </span>
                     <span className="badge badge-normal" style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.1)', borderColor: 'var(--secondary)', color: 'var(--secondary)' }}>
-                      Total No of Matches: {parseMatchNumbers(match.match_number, match.date, dateTotalMap).total} (Match No: {parseMatchNumbers(match.match_number, match.date, dateTotalMap).dailyDigit})
+                      Total No of Matches: {parseMatchNumbers(match.match_number, match.date, dateTotalMap).total} (Matches: {parseMatchNumbers(match.match_number, match.date, dateTotalMap).dailyDigit})
                     </span>
                   </h3>
                   <div style={{ display: 'flex', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px', flexWrap: 'wrap' }}>
