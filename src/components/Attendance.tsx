@@ -3,6 +3,7 @@ import { Calendar, Save, Trash2, CheckSquare, Plus, AlertTriangle, Download, Edi
 import { Player, AttendanceWeek, AttendanceRecord, PaymentMode } from '../types';
 
 interface AttendanceProps {
+  isViewer?: boolean;
   players: Player[];
   weeks: AttendanceWeek[];
   attendance: AttendanceRecord[];
@@ -14,6 +15,7 @@ interface AttendanceProps {
 }
 
 export default function Attendance({
+  isViewer = false,
   players,
   weeks,
   attendance,
@@ -393,11 +395,13 @@ export default function Attendance({
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px' }}>
-          {!showAddWeek ? (
+          {!isViewer && !showAddWeek && (
             <button onClick={() => setShowAddWeek(true)} className="btn btn-secondary">
               <Plus size={18} /> New Session
             </button>
-          ) : (
+          )}
+
+          {!isViewer && showAddWeek && (
             <form onSubmit={handleAddWeekSubmit} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input 
                 type="date" 
@@ -418,7 +422,7 @@ export default function Attendance({
             </form>
           )}
 
-          {selectedWeekId && (
+          {!isViewer && selectedWeekId && (
             <>
               <button 
                 onClick={handleEditWeekDate} 
@@ -467,9 +471,11 @@ export default function Attendance({
               >
                 <Download size={18} /> Export Attendance
               </button>
-              <button onClick={handleSaveAll} className="btn btn-primary" disabled={saving}>
-                <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
-              </button>
+              {!isViewer && (
+                <button onClick={handleSaveAll} className="btn btn-primary" disabled={saving}>
+                  <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+                </button>
+              )}
             </div>
           </div>
 

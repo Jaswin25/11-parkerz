@@ -4,6 +4,7 @@ import { Player, AttendanceWeek, AttendanceRecord, ExtraPayment, Match } from '.
 import { calculatePlayerStats } from '../services/db';
 
 interface PendingProps {
+  isViewer?: boolean;
   players: Player[];
   weeks: AttendanceWeek[];
   attendance: AttendanceRecord[];
@@ -14,6 +15,7 @@ interface PendingProps {
 }
 
 export default function Pending({
+  isViewer = false,
   players,
   weeks,
   attendance,
@@ -259,32 +261,36 @@ export default function Pending({
 
               <div style={{ display: 'flex', gap: '6px' }}>
                 {/* Clear Payment */}
-                <button 
-                  onClick={() => handleRecordPaymentClick(p, p.totalPending)} 
-                  className="btn btn-secondary"
-                  style={{ display: 'flex', gap: '4px', fontSize: '0.85rem', padding: '8px 12px', background: 'var(--accent-glow)', borderColor: 'rgba(245,158,11,0.2)', color: 'var(--accent)' }}
-                  title="Settle Dues"
-                >
-                  <DollarSign size={16} /> Collect
-                </button>
+                {!isViewer && (
+                  <button 
+                    onClick={() => handleRecordPaymentClick(p, p.totalPending)} 
+                    className="btn btn-secondary"
+                    style={{ display: 'flex', gap: '4px', fontSize: '0.85rem', padding: '8px 12px', background: 'var(--accent-glow)', borderColor: 'rgba(245,158,11,0.2)', color: 'var(--accent)' }}
+                    title="Settle Dues"
+                  >
+                    <DollarSign size={16} /> Collect
+                  </button>
+                )}
 
                 {/* Send WhatsApp */}
-                <button 
-                  onClick={() => handleSendWhatsApp(p)} 
-                  className="btn btn-secondary"
-                  style={{ 
-                    display: 'flex', 
-                    gap: '4px', 
-                    fontSize: '0.85rem', 
-                    padding: '8px 12px', 
-                    background: 'rgba(34, 197, 94, 0.1)', 
-                    borderColor: 'rgba(34, 197, 94, 0.2)', 
-                    color: '#22c55e' 
-                  }}
-                  title={p.phone ? `Send directly to ${p.phone} via WhatsApp` : "Open WhatsApp Send screen"}
-                >
-                  <Send size={16} /> Send
-                </button>
+                {!isViewer && (
+                  <button 
+                    onClick={() => handleSendWhatsApp(p)} 
+                    className="btn btn-secondary"
+                    style={{ 
+                      display: 'flex', 
+                      gap: '4px', 
+                      fontSize: '0.85rem', 
+                      padding: '8px 12px', 
+                      background: 'rgba(34, 197, 94, 0.1)', 
+                      borderColor: 'rgba(34, 197, 94, 0.2)', 
+                      color: '#22c55e' 
+                    }}
+                    title={p.phone ? `Send directly to ${p.phone} via WhatsApp` : "Open WhatsApp Send screen"}
+                  >
+                    <Send size={16} /> Send
+                  </button>
+                )}
 
                 {/* Copy Text */}
                 <button 

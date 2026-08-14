@@ -4,6 +4,7 @@ import { Player, PlayerCategory, AttendanceWeek, AttendanceRecord, ExtraPayment,
 import { calculatePlayerStats } from '../services/db';
 
 interface PlayersProps {
+  isViewer?: boolean;
   players: Player[];
   weeks: AttendanceWeek[];
   attendance: AttendanceRecord[];
@@ -15,6 +16,7 @@ interface PlayersProps {
 }
 
 export default function Players({
+  isViewer = false,
   players,
   weeks,
   attendance,
@@ -385,7 +387,7 @@ export default function Players({
                 { id: 'ledger', label: 'Payment Ledger', icon: DollarSign },
                 { id: 'attendance', label: 'Attendance', icon: UserCheck },
                 { id: 'matches', label: 'Matches', icon: Award },
-                { id: 'edit', label: 'Edit Profile', icon: Edit }
+                ...(!isViewer ? [{ id: 'edit', label: 'Edit Profile', icon: Edit }] : [])
               ].map(t => {
                 const Icon = t.icon;
                 const active = activeModalTab === t.id;

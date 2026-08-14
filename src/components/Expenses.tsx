@@ -3,6 +3,7 @@ import { Plus, Trash2, Calendar, Search, Download, Filter, DollarSign, Tag, Edit
 import { Expense, ExpenseCategory } from '../types';
 
 interface ExpensesProps {
+  isViewer?: boolean;
   expenses: Expense[];
   onAddExpense: (expense: { date: string; item: string; category: ExpenseCategory; amount: number; paid_from: 'Cash' | 'GPay'; notes?: string }) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
@@ -13,6 +14,7 @@ interface ExpensesProps {
 const CATEGORIES: ExpenseCategory[] = ['Bat', 'Ball', 'Tape', 'Stumps', 'Ground', 'Jersey', 'Food', 'Other'];
 
 export default function Expenses({
+  isViewer = false,
   expenses,
   onAddExpense,
   onDeleteExpense,
@@ -175,27 +177,29 @@ export default function Expenses({
       {/* Header and Toggle */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <DollarSign size={24} className="text-secondary" style={{ color: 'var(--secondary)' }} />
-            Club Expenses Register
+            Team Expenses Ledger
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
             Audited outflows matching filters: <strong>{formatCurrency(totalSpent)}</strong> (Cash: {formatCurrency(cashSpent)} | GPay: {formatCurrency(gpaySpent)})
           </p>
         </div>
 
-        <button 
-          onClick={() => {
-            if (editingExpense) {
-              handleCancelEdit();
-            } else {
-              setShowAddForm(!showAddForm);
-            }
-          }} 
-          className="btn btn-primary"
-        >
-          {showAddForm ? (editingExpense ? 'Cancel Edit' : 'Close Form') : <><Plus size={18} /> Record Expense</>}
-        </button>
+        {!isViewer && (
+          <button 
+            onClick={() => {
+              if (editingExpense) {
+                handleCancelEdit();
+              } else {
+                setShowAddForm(!showAddForm);
+              }
+            }} 
+            className="btn btn-primary"
+          >
+            {showAddForm ? (editingExpense ? 'Cancel Edit' : 'Close Form') : <><Plus size={18} /> Record Expense</>}
+          </button>
+        )}
       </div>
 
       {/* Add Expense Form Panel */}
@@ -381,24 +385,26 @@ export default function Expenses({
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
-                      <button 
-                        onClick={() => handleEditClick(exp)}
-                        className="btn-icon" 
-                        style={{ color: 'var(--secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
-                        title="Edit expense"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(exp.id, exp.item, exp.amount)}
-                        className="btn-icon" 
-                        style={{ color: 'var(--accent)', borderColor: 'rgba(225,29,72,0.1)' }}
-                        title="Delete expense"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {!isViewer && (
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                        <button 
+                          onClick={() => handleEditClick(exp)}
+                          className="btn-icon" 
+                          style={{ color: 'var(--secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
+                          title="Edit expense"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(exp.id, exp.item, exp.amount)}
+                          className="btn-icon" 
+                          style={{ color: 'var(--accent)', borderColor: 'rgba(225,29,72,0.1)' }}
+                          title="Delete expense"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

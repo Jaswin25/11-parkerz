@@ -28,6 +28,10 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('isLoggedIn_11parkerz') === 'true';
   });
+  const [userRole, setUserRole] = useState<'admin' | 'viewer'>(() => {
+    return (localStorage.getItem('userRole_11parkerz') as 'admin' | 'viewer') || 'admin';
+  });
+
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,11 +39,26 @@ export default function App() {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (usernameInput.trim().toLowerCase() === '11parkerz' && passwordInput === 'Parkerz@11') {
+    const uname = usernameInput.trim().toLowerCase();
+    const pwd = passwordInput.trim();
+
+    if (uname === '11parkerz' && pwd === 'Parkerz@11') {
       localStorage.setItem('isLoggedIn_11parkerz', 'true');
+      localStorage.setItem('userRole_11parkerz', 'admin');
+      setUserRole('admin');
       setIsLoggedIn(true);
       setLoginError('');
-      showToast('Successfully logged in!', 'success');
+      showToast('Logged in as Admin (Full Access)', 'success');
+    } else if (
+      (uname === 'viewer' || uname === '11parkerz_view' || uname === 'view') && 
+      (pwd === 'Viewer@11' || pwd === 'View@11parkerz' || pwd === 'view' || pwd === 'Viewer@11parkerz')
+    ) {
+      localStorage.setItem('isLoggedIn_11parkerz', 'true');
+      localStorage.setItem('userRole_11parkerz', 'viewer');
+      setUserRole('viewer');
+      setIsLoggedIn(true);
+      setLoginError('');
+      showToast('Logged in as Viewer (View Only)', 'info');
     } else {
       setLoginError('Invalid Username or Password. Please try again.');
       showToast('Login failed', 'error');
@@ -48,7 +67,9 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn_11parkerz');
+    localStorage.removeItem('userRole_11parkerz');
     setIsLoggedIn(false);
+    setUserRole('admin');
     setUsernameInput('');
     setPasswordInput('');
     showToast('Logged out successfully', 'info');
@@ -258,7 +279,7 @@ export default function App() {
           <div className="login-header">
             <img src="/logo.jpeg" alt="11 Parkerz Logo" className="login-logo" />
             <h2 style={{ fontSize: '1.8rem', marginBottom: '6px' }}>11 Parkerz</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Sign in to access control panel</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sign in as Admin (Full Control) or Viewer (Read Only)</p>
           </div>
 
           <form onSubmit={handleLoginSubmit}>
@@ -367,6 +388,18 @@ export default function App() {
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo.jpeg" alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--secondary)', boxShadow: '0 0 10px var(--secondary-glow)' }} />
             <span style={{ color: 'var(--text-primary)' }}>11 Parkerz</span>
+            <span style={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: '12px',
+              background: userRole === 'viewer' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+              color: userRole === 'viewer' ? '#60a5fa' : '#34d399',
+              border: `1px solid ${userRole === 'viewer' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+              letterSpacing: '0.5px'
+            }}>
+              {userRole === 'viewer' ? 'VIEW-ONLY MODE' : 'ADMIN'}
+            </span>
           </h1>
         </div>
 
@@ -463,6 +496,7 @@ export default function App() {
         }}>
           {activeTab === 'dashboard' && (
             <Dashboard 
+              isViewer={userRole === 'viewer'}
               balances={balances}
               players={players}
               matches={matches}
@@ -480,6 +514,7 @@ export default function App() {
 
           {activeTab === 'players' && (
             <Players 
+              isViewer={userRole === 'viewer'}
               players={players}
               weeks={weeks}
               attendance={attendance}
@@ -493,6 +528,7 @@ export default function App() {
 
           {activeTab === 'attendance' && (
             <Attendance 
+              isViewer={userRole === 'viewer'}
               players={players}
               weeks={weeks}
               attendance={attendance}
@@ -506,6 +542,7 @@ export default function App() {
 
           {activeTab === 'money' && (
             <MoneyHistory 
+              isViewer={userRole === 'viewer'}
               players={players}
               weeks={weeks}
               attendance={attendance}
@@ -525,6 +562,7 @@ export default function App() {
 
           {activeTab === 'matches' && (
             <Matches 
+              isViewer={userRole === 'viewer'}
               players={players}
               matches={matches}
               onAddMatch={handleAddMatch}
@@ -537,6 +575,7 @@ export default function App() {
 
           {activeTab === 'expenses' && (
             <Expenses 
+              isViewer={userRole === 'viewer'}
               expenses={expenses}
               onAddExpense={handleAddExpense}
               onDeleteExpense={handleDeleteExpense}
@@ -547,6 +586,7 @@ export default function App() {
 
           {activeTab === 'pending' && (
             <Pending 
+              isViewer={userRole === 'viewer'}
               players={players}
               weeks={weeks}
               attendance={attendance}

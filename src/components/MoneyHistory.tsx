@@ -40,6 +40,7 @@ const parseMatchNumbers = (matchNumStr: string | undefined, date: string, dateTo
 };
 
 interface MoneyHistoryProps {
+  isViewer?: boolean;
   players: Player[];
   weeks: AttendanceWeek[];
   attendance: AttendanceRecord[];
@@ -57,6 +58,7 @@ interface MoneyHistoryProps {
 }
 
 export default function MoneyHistory({
+  isViewer = false,
   players,
   weeks,
   attendance,
@@ -732,7 +734,7 @@ export default function MoneyHistory({
 
                     {/* Action */}
                     <td>
-                      {t.canDelete ? (
+                      {!isViewer && t.canDelete ? (
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
                             onClick={() => handleEditClick(t)}

@@ -23,6 +23,7 @@ const getAutoDailyMatchNumber = (targetDate: string, existingMatches: Match[]) =
 };
 
 interface DashboardProps {
+  isViewer?: boolean;
   balances: WalletBalances;
   players: Player[];
   latestWeekDate: string;
@@ -38,6 +39,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+  isViewer = false,
   balances,
   players,
   matches,
@@ -409,7 +411,7 @@ export default function Dashboard({
       <div className="glass-panel">
         <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <PlusCircle size={20} className="text-secondary" style={{ color: 'var(--secondary)' }} />
-          Quick Manager Actions
+          {isViewer ? 'Quick Navigation' : 'Quick Manager Actions'}
         </h3>
 
         <div style={{
@@ -418,26 +420,30 @@ export default function Dashboard({
           gap: '12px'
         }}>
           <button onClick={() => onNavigate('attendance')} className="btn btn-primary" style={{ height: '52px' }}>
-            <Calendar size={18} /> Mark Attendance
+            <Calendar size={18} /> {isViewer ? 'View Attendance' : 'Mark Attendance'}
           </button>
 
-          <button onClick={() => setShowAddExpense(true)} className="btn btn-secondary" style={{ height: '52px' }}>
-            <Plus size={18} /> Add Expense
-          </button>
+          {!isViewer && (
+            <>
+              <button onClick={() => setShowAddExpense(true)} className="btn btn-secondary" style={{ height: '52px' }}>
+                <Plus size={18} /> Add Expense
+              </button>
 
-          <button onClick={() => setShowAddMatch(true)} className="btn btn-secondary" style={{ height: '52px' }}>
-            <Award size={18} /> Add Match
-          </button>
+              <button onClick={() => setShowAddMatch(true)} className="btn btn-secondary" style={{ height: '52px' }}>
+                <Award size={18} /> Add Match
+              </button>
 
-          <button onClick={() => setShowAddPlayer(true)} className="btn btn-secondary" style={{ height: '52px' }}>
-            <Plus size={18} /> Add Player
-          </button>
+              <button onClick={() => setShowAddPlayer(true)} className="btn btn-secondary" style={{ height: '52px' }}>
+                <Plus size={18} /> Add Player
+              </button>
 
-          <button onClick={() => setShowRecordPayment(true)} className="btn btn-secondary" style={{ height: '52px', borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--accent-glow)' }}>
-            <DollarSign size={18} /> Record Payment
-          </button>
+              <button onClick={() => setShowRecordPayment(true)} className="btn btn-secondary" style={{ height: '52px', borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--accent-glow)' }}>
+                <DollarSign size={18} /> Record Payment
+              </button>
+            </>
+          )}
 
-          <button onClick={() => onNavigate('pending')} className="btn btn-secondary" style={{ height: '52px', gridColumn: 'span 1' }}>
+          <button onClick={() => onNavigate('pending')} className="btn btn-secondary" style={{ height: '52px' }}>
             View Pending <ArrowRightCircle size={18} />
           </button>
         </div>

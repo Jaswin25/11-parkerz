@@ -40,6 +40,7 @@ const parseMatchNumbers = (matchNumStr: string | undefined, date: string, dateTo
 };
 
 interface MatchesProps {
+  isViewer?: boolean;
   players: Player[];
   matches: Match[];
   onAddMatch: (match: { date: string; opponent: string; ground: string; bet_amount: number; result: MatchResult; amount_won_lost: number; settled_via: SettlementMode; cash_amount: number; gpay_amount: number; who_played: string[]; notes?: string; match_number?: string }) => Promise<void>;
@@ -50,6 +51,7 @@ interface MatchesProps {
 }
 
 export default function Matches({
+  isViewer = false,
   players,
   matches,
   onAddMatch,
@@ -286,22 +288,24 @@ export default function Matches({
 
       {/* Header and Toggle */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Award size={24} className="text-secondary" style={{ color: 'var(--secondary)' }} />
           Matches Betting Books
         </h2>
-        <button
-          onClick={() => {
-            if (editingMatch) {
-              handleCancelEdit();
-            } else {
-              setShowAddForm(!showAddForm);
-            }
-          }}
-          className="btn btn-primary"
-        >
-          {showAddForm ? (editingMatch ? 'Cancel Edit' : <><X size={18} /> Close Form</>) : <><Plus size={18} /> Record Match</>}
-        </button>
+        {!isViewer && (
+          <button
+            onClick={() => {
+              if (editingMatch) {
+                handleCancelEdit();
+              } else {
+                setShowAddForm(!showAddForm);
+              }
+            }}
+            className="btn btn-primary"
+          >
+            {showAddForm ? (editingMatch ? 'Cancel Edit' : <><X size={18} /> Close Form</>) : <><Plus size={18} /> Record Match</>}
+          </button>
+        )}
       </div>
 
       {/* Stats Summary Panel */}
@@ -542,24 +546,26 @@ export default function Matches({
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => handleEditClick(m)}
-                          className="btn-icon"
-                          style={{ color: 'var(--text-secondary)', borderColor: 'rgba(56,189,248,0.1)', padding: '6px' }}
-                          title="Edit Match"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id, m.opponent, m.bet_amount)}
-                          className="btn-icon"
-                          style={{ color: 'var(--text-muted)', padding: '6px' }}
-                          title="Delete Match"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      {!isViewer && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleEditClick(m)}
+                            className="btn-icon"
+                            style={{ color: 'var(--text-secondary)', borderColor: 'rgba(56,189,248,0.1)', padding: '6px' }}
+                            title="Edit Match"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(m.id, m.opponent, m.bet_amount)}
+                            className="btn-icon"
+                            style={{ color: 'var(--text-muted)', padding: '6px' }}
+                            title="Delete Match"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -623,23 +629,25 @@ export default function Matches({
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>via {match.settled_via}</span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      onClick={() => handleEditClick(match)}
-                      className="btn-icon"
-                      style={{ color: 'var(--text-secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
-                      title="Edit Match"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(match.id, match.opponent, match.bet_amount)}
-                      className="btn-icon"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  {!isViewer && (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => handleEditClick(match)}
+                        className="btn-icon"
+                        style={{ color: 'var(--text-secondary)', borderColor: 'rgba(56,189,248,0.1)' }}
+                        title="Edit Match"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(match.id, match.opponent, match.bet_amount)}
+                        className="btn-icon"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
