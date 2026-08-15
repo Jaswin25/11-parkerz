@@ -182,10 +182,15 @@ export default function Matches({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!opponent.trim() || !betAmount) return;
+    if (!opponent.trim() || betAmount === '') return;
 
     setSubmitting(true);
     const bet = parseFloat(betAmount);
+    if (isNaN(bet) || bet < 0) {
+      showToast('Please enter a valid bet amount (0 or greater)', 'error');
+      setSubmitting(false);
+      return;
+    }
     const winLossAmount = result === 'Win' ? bet : result === 'Loss' ? -bet : 0;
 
     let cashAmt = 0;
@@ -374,7 +379,7 @@ export default function Matches({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Bet Amount (₹)</label>
-                <input type="number" required min="1" placeholder="e.g. 200" value={betAmount} onChange={e => setBetAmount(e.target.value)} />
+                <input type="number" required min="0" placeholder="e.g. 200" value={betAmount} onChange={e => setBetAmount(e.target.value)} />
               </div>
               <div style={{ display: 'grid', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Result</label>
@@ -531,8 +536,8 @@ export default function Matches({
                       {m.notes && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.notes}</div>}
                     </td>
                     <td>{m.ground}</td>
-                    <td style={{ color: isWin ? 'var(--primary)' : m.result === 'Loss' ? 'var(--danger)' : '#94a3b8', fontWeight: '600' }}>
-                      {isWin ? '+' : m.result === 'Loss' ? '-' : ''}{formatCurrency(m.bet_amount)}
+                    <td style={{ color: m.bet_amount === 0 ? 'var(--text-secondary)' : isWin ? 'var(--primary)' : m.result === 'Loss' ? 'var(--danger)' : '#94a3b8', fontWeight: '600' }}>
+                      {m.bet_amount === 0 ? formatCurrency(0) : `${isWin ? '+' : m.result === 'Loss' ? '-' : ''}${formatCurrency(m.bet_amount)}`}
                     </td>
                     <td>
                       <span className={`badge ${isWin ? 'badge-win' : m.result === 'Loss' ? 'badge-loss' : 'badge-draw'}`} style={{ fontSize: '0.75rem' }}>
@@ -623,8 +628,8 @@ export default function Matches({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bet Result</span>
-                    <h3 style={{ color: isWin ? 'var(--primary)' : isLoss ? 'var(--danger)' : '#94a3b8', fontSize: '1.3rem' }}>
-                      {isWin ? '+' : isLoss ? '-' : ''}{formatCurrency(match.bet_amount)}
+                    <h3 style={{ color: match.bet_amount === 0 ? 'var(--text-secondary)' : isWin ? 'var(--primary)' : isLoss ? 'var(--danger)' : '#94a3b8', fontSize: '1.3rem' }}>
+                      {match.bet_amount === 0 ? formatCurrency(0) : `${isWin ? '+' : isLoss ? '-' : ''}${formatCurrency(match.bet_amount)}`}
                     </h3>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>via {match.settled_via}</span>
                   </div>
