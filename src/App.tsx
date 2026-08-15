@@ -42,7 +42,7 @@ export default function App() {
     const uname = usernameInput.trim().toLowerCase();
     const pwd = passwordInput.trim();
 
-    if (uname === '11parkerz' && pwd === 'Parkerz@11') {
+    if (uname === 'admin@11' && pwd === '11@ParKerZ') {
       localStorage.setItem('isLoggedIn_11parkerz', 'true');
       localStorage.setItem('userRole_11parkerz', 'admin');
       setUserRole('admin');
@@ -50,8 +50,7 @@ export default function App() {
       setLoginError('');
       showToast('Logged in as Admin (Full Access)', 'success');
     } else if (
-      (uname === 'viewer' || uname === '11parkerz_view' || uname === 'view') && 
-      (pwd === 'Viewer@11' || pwd === 'View@11parkerz' || pwd === 'view' || pwd === 'Viewer@11parkerz')
+      uname === 'view@11' && pwd === 'Unity@11'
     ) {
       localStorage.setItem('isLoggedIn_11parkerz', 'true');
       localStorage.setItem('userRole_11parkerz', 'viewer');
