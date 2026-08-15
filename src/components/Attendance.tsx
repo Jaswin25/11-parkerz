@@ -519,34 +519,38 @@ export default function Attendance({
                         <div style={{ display: 'inline-flex', background: 'rgba(0, 0, 0, 0.25)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', gap: '4px' }}>
                           <button
                             type="button"
-                            onClick={() => { if (!isPresent) handleStatusToggle(player.id); }}
+                            disabled={isViewer}
+                            onClick={() => { if (!isPresent && !isViewer) handleStatusToggle(player.id); }}
                             style={{
                               padding: '5px 12px',
                               borderRadius: '6px',
                               fontSize: '0.75rem',
                               fontWeight: '600',
-                              cursor: 'pointer',
+                              cursor: isViewer ? 'not-allowed' : 'pointer',
                               background: isPresent ? 'var(--primary)' : 'transparent',
                               color: isPresent ? '#fff' : 'var(--text-secondary)',
                               boxShadow: isPresent ? '0 2px 6px var(--primary-glow)' : 'none',
-                              transition: 'var(--transition-fast)'
+                              transition: 'var(--transition-fast)',
+                              opacity: isViewer ? 0.7 : 1
                             }}
                           >
                             Present
                           </button>
                           <button
                             type="button"
-                            onClick={() => { if (isPresent) handleStatusToggle(player.id); }}
+                            disabled={isViewer}
+                            onClick={() => { if (isPresent && !isViewer) handleStatusToggle(player.id); }}
                             style={{
                               padding: '5px 12px',
                               borderRadius: '6px',
                               fontSize: '0.75rem',
                               fontWeight: '600',
-                              cursor: 'pointer',
+                              cursor: isViewer ? 'not-allowed' : 'pointer',
                               background: !isPresent ? 'var(--accent)' : 'transparent',
                               color: !isPresent ? '#fff' : 'var(--text-secondary)',
                               boxShadow: !isPresent ? '0 2px 6px var(--accent-glow)' : 'none',
-                              transition: 'var(--transition-fast)'
+                              transition: 'var(--transition-fast)',
+                              opacity: isViewer ? 0.7 : 1
                             }}
                           >
                             Absent
@@ -560,9 +564,10 @@ export default function Attendance({
                           <input 
                             type="number" 
                             min="0"
+                            disabled={isViewer}
                             value={state.due_amount} 
                             onChange={e => handleDueChange(player.id, e.target.value)}
-                            style={{ width: '70px', padding: '4px 8px' }}
+                            style={{ width: '70px', padding: '4px 8px', cursor: isViewer ? 'not-allowed' : 'text' }}
                           />
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>-</span>
@@ -575,9 +580,10 @@ export default function Attendance({
                           <input 
                             type="number" 
                             min="0"
+                            disabled={isViewer}
                             value={state.paid_amount} 
                             onChange={e => handlePaidChange(player.id, e.target.value)}
-                            style={{ width: '85px', padding: '4px 8px', border: pending > 0 ? '1px solid var(--accent)' : '1px solid var(--border-color)' }}
+                            style={{ width: '85px', padding: '4px 8px', border: pending > 0 ? '1px solid var(--accent)' : '1px solid var(--border-color)', cursor: isViewer ? 'not-allowed' : 'text' }}
                           />
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>-</span>
@@ -590,8 +596,9 @@ export default function Attendance({
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <select 
                               value={state.payment_mode} 
+                              disabled={isViewer}
                               onChange={e => handleModeChange(player.id, e.target.value as PaymentMode)}
-                              style={{ width: '90px', padding: '4px 6px', fontSize: '0.85rem' }}
+                              style={{ width: '90px', padding: '4px 6px', fontSize: '0.85rem', cursor: isViewer ? 'not-allowed' : 'pointer' }}
                             >
                               <option value="GPay">GPay</option>
                               <option value="Cash">Cash</option>
@@ -604,17 +611,19 @@ export default function Attendance({
                                 <input 
                                   type="number" 
                                   placeholder="Cash"
+                                  disabled={isViewer}
                                   value={state.cash_amount}
                                   onChange={e => handleSplitChange(player.id, 'cash', e.target.value)}
-                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.75rem' }}
+                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.75rem', cursor: isViewer ? 'not-allowed' : 'text' }}
                                   title="Cash split amount"
                                 />
                                 <input 
                                   type="number" 
                                   placeholder="GPay"
+                                  disabled={isViewer}
                                   value={state.gpay_amount}
                                   onChange={e => handleSplitChange(player.id, 'gpay', e.target.value)}
-                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.75rem' }}
+                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.75rem', cursor: isViewer ? 'not-allowed' : 'text' }}
                                   title="GPay split amount"
                                 />
                               </div>
@@ -645,11 +654,13 @@ export default function Attendance({
             </table>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-            <button onClick={handleSaveAll} className="btn btn-primary" disabled={saving}>
-              <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
-            </button>
-          </div>
+          {!isViewer && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button onClick={handleSaveAll} className="btn btn-primary" disabled={saving}>
+                <Save size={18} /> {saving ? 'Saving...' : 'Save Attendance'}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
