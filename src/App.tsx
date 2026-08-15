@@ -278,7 +278,6 @@ export default function App() {
           <div className="login-header">
             <img src="/logo.jpeg" alt="11 Parkerz Logo" className="login-logo" />
             <h2 style={{ fontSize: '1.8rem', marginBottom: '6px' }}>11 Parkerz</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sign in as Admin (Full Control) or Viewer (Read Only)</p>
           </div>
 
           <form onSubmit={handleLoginSubmit}>
@@ -364,7 +363,7 @@ export default function App() {
         <div className={`splash-screen ${splashFade ? 'fade-out' : ''}`}>
           <div className="splash-logo-container">
             <img src="/logo.jpeg" alt="11 Parkerz Logo" className="splash-logo" />
-            <h1 className="splash-title">11 Parkerz</h1>
+            <h1 className="splash-title">11 ParkerZ</h1>
             <div className="splash-loader">
               <div className="splash-loader-bar"></div>
             </div>
@@ -386,7 +385,7 @@ export default function App() {
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo.jpeg" alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--secondary)', boxShadow: '0 0 10px var(--secondary-glow)' }} />
-            <span style={{ color: 'var(--text-primary)' }}>11 Parkerz</span>
+            <span style={{ color: 'var(--text-primary)' }}>11 ParkerZ</span>
             <span style={{
               fontSize: '0.7rem',
               fontWeight: 700,

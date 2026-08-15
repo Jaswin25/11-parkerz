@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">11 Parkerz</string>
-    <string name="title_activity_main">11 Parkerz</string>
-    <string name="package_name">com.parkerz.eleven</string>
-    <string name="custom_url_scheme">com.parkerz.eleven</string>
-</resources>

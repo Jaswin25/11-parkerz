@@ -9,9 +9,8 @@
   /* Deep Navy Midnight background */
   --bg-secondary: #0b1528;
   /* England Cricket Navy Blue */
-  --bg-card: rgba(11, 21, 40, 0.8);
-  --border-color: rgba(56, 189, 248, 0.16);
-  /* Ice/Sky Blue border glow */
+  --bg-card: rgba(30, 30, 35, 0.55);
+  --border-color: rgba(255, 255, 255, 0.12);
 
   --primary: #1d4ed8;
   /* England ODI Royal Blue */
@@ -32,13 +31,13 @@
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
 
-  --glass-bg: rgba(255, 255, 255, 0.02);
-  --glass-blur: blur(16px);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --border-radius: 16px;
+  --border-radius: 20px;
   --border-radius-sm: 10px;
   --border-radius-lg: 24px;
 }
@@ -99,6 +98,7 @@ h6 {
 }
 
 input[type="text"],
+input[type="password"],
 input[type="number"],
 input[type="date"],
 select,
@@ -242,7 +242,7 @@ button {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
 }
 
 /* Segmented Control Button Groups */
